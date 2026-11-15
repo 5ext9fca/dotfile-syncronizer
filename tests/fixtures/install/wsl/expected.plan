@@ -1,2 +1,2 @@
-desktop|1|apt|sample|default||||||||||||||||native|||apt|apt||||||environment-not-selected:wsl||skip|environment-not-selected:wsl|config||6
-base|2|apt|sample|default||||||||||||||||native wsl|||apt|apt||||||offline-preferred-method||install|requested|config||6
+desktop|1|apt|sample|default|||||||||||||||||native|||apt|apt||||||environment-not-selected:wsl||skip|environment-not-selected:wsl|config||7
+base|2|apt|sample|default|||||||||||||||||native wsl|||apt|apt||||||offline-preferred-method||install|requested|config||7

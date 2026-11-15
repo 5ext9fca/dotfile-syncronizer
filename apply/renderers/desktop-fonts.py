@@ -13,6 +13,41 @@ import re
 import shutil
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
+
+
+def read_families(source):
+    """Read the explicit generic fallback lists from the deployed Fontconfig XML."""
+    text = Path(source).read_text(encoding='utf-8')
+    if '<!ENTITY' in text.upper():
+        raise ValueError('Fontconfig entities are not supported')
+    root = ET.fromstring(text)
+    if root.tag != 'fontconfig':
+        raise ValueError('expected fontconfig root')
+    aliases, required = {}, []
+    for alias in root.findall('alias'):
+        names = alias.findall('family')
+        if len(names) != 1 or not names[0].text:
+            raise ValueError('each Fontconfig alias needs one family')
+        name = names[0].text
+        if name in aliases:
+            raise ValueError(f'duplicate Fontconfig alias: {name}')
+        preferred = []
+        for kind in ('prefer', 'accept'):
+            for element in alias.findall(f'{kind}/family'):
+                family = element.text or ''
+                if (not family or family != family.strip() or list(element)
+                        or any(ord(c) < 32 or ord(c) == 127 or c in ',|\\[]' for c in family)):
+                    raise ValueError('unsupported font family')
+                if family not in required:
+                    required.append(family)
+                if kind == 'prefer':
+                    preferred.append(family)
+        aliases[name] = preferred
+    for name in ('sans-serif', 'serif', 'system-ui', 'monospace'):
+        if not aliases.get(name):
+            raise ValueError(f'missing Fontconfig preference: {name}')
+    return aliases['system-ui'][0], aliases['monospace'][0], required
 
 
 def kde_default(group, key):
@@ -84,7 +119,7 @@ def replace_family(value, family, kde):
     return f'{family} {suffix}'
 
 
-def render(kind, text):
+def render(kind, text, regular, monospace):
     kde = kind == 'kdeglobals'
     if kde:
         keys = [('General', k) for k in ('font', 'fixed', 'menuFont', 'toolBarFont', 'smallestReadableFont', 'taskbarFont')]
@@ -126,7 +161,7 @@ def render(kind, text):
             positions[section, key] = (i, rawkey, value)
     additions = {}
     for group, key in keys:
-        family = 'JetBrainsMono Nerd Font' if key == 'fixed' else 'PingFang SC'
+        family = monospace if key == 'fixed' else regular
         previous = positions.get((group, key))
         value = previous[2] if previous else (kde_default(group, key) if kde else gtk_default(3 if '3.0' in kind else 4))
         replacement = replace_family(value, family, kde)
@@ -153,15 +188,19 @@ def render(kind, text):
 
 
 def main():
-    kind, source, output = sys.argv[1:]
+    if len(sys.argv) == 3 and sys.argv[1] == '--families':
+        print('\n'.join(read_families(sys.argv[2])[2]))
+        return
+    kind, source, output, fontconfig = sys.argv[1:]
+    regular, monospace, _ = read_families(fontconfig)
     path = Path(source)
     text = path.read_bytes().decode('utf-8') if path.exists() else ''
-    Path(output).write_bytes(render(kind, text).encode('utf-8'))
+    Path(output).write_bytes(render(kind, text, regular, monospace).encode('utf-8'))
 
 
 if __name__ == '__main__':
     try:
         main()
-    except (ValueError, OSError, subprocess.SubprocessError) as error:
+    except (ValueError, OSError, ET.ParseError, subprocess.SubprocessError) as error:
         print(f'error: desktop-fonts: {error}', file=sys.stderr)
         sys.exit(1)

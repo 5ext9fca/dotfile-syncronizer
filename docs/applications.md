@@ -23,7 +23,7 @@
 
 字体回退为 JetBrainsMono Nerd Font / Noto Sans CJK SC，字号 14，Tokyo Night，窗口透明度 0.9。只在多个 tab 时显示 tab bar；关闭窗口和配置的 Cmd+W 操作要求确认。macOS 启动全屏并启用背景模糊，原生 Linux 启动最大化；WSL 不触发原生 Linux 窗口逻辑。
 
-默认安装流程包含 JetBrainsMono Nerd Font，来源与环境范围见 [字体安装](../install/README.md#终端字体)。单独 apply 不安装字体。原生 KDE 的 `desktop-fonts` 配置桌面默认正文为苹方、等宽为 JetBrainsMono/Noto CJK，保留 WezTerm 的现有回退链，见 [桌面字体](../apply/README.md#桌面字体)。配置未对窗口系统或图形服务做健康验证。
+默认安装流程包含 JetBrainsMono Nerd Font，来源与环境范围见 [字体安装](../install/README.md#终端字体)。单独 apply 不安装字体。原生 KDE 的 `desktop-fonts` 配置桌面默认正文为 Noto Sans CJK SC、等宽为 JetBrainsMono/Noto CJK，保留 WezTerm 的现有回退链，见 [桌面字体](../apply/README.md#桌面字体)。配置未对窗口系统或图形服务做健康验证。
 
 原生 Linux 在 `gui-startup` 创建窗口后立即请求最大化。Fish 在本机 Linux WezTerm 中自动启动 Zellij 前，每 0.1 秒读取一次 PTY 尺寸，等待尺寸连续 0.5 秒不变，最多等待约 2 秒；读取失败则直接继续。此等待用于缓解 Zellij 启动与窗口最大化之间的尺寸竞态，不保证窗口管理器一定在期限内完成调整。SSH、WSL 和其他终端不增加等待。修改后需重新启动 WezTerm 验证，配置热重载不会重新执行启动事件。
 

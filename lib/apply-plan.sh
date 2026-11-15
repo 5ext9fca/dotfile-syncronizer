@@ -133,7 +133,7 @@ apply_make_plan() (
     else printf 'error: missing source: %s\n' "$source_path" >&2;return 1;fi
     if [[ "$renderer" == desktop-fonts ]];then
       [[ -n "$render_scratch" ]] || { printf 'error: desktop-fonts requires caller-owned scratch\n' >&2;return 1; }
-      desktop_fonts_plan "$component" "$config" "$session" "$render_scratch" "$plan" "$directories" "$preview" || return
+      desktop_fonts_plan "$component" "$config" "$session" "$render_scratch" "$plan" "$directories" "$preview" "$source_path" || return
     fi
   done <<< "$definitions"
   cat "$plan"

@@ -60,7 +60,7 @@ install_depends_on=homebrew
 
 | 需求 | 参考文件 | 注意 |
 | --- | --- | --- |
-| 下载字体 | [pingfang-sc.conf](../install/items/pingfang-sc.conf) | font-download 只接收 HTTPS 基础目录和受限 font_files；整组 detect_files，Fontconfig/curl 依赖，native-only |
+| 下载字体 | [隔离下载夹具](../tests/fixtures/install/font-download/sample.conf) | font-download 只接收 HTTPS 基础目录和受限 font_files、font_family；整组 detect_files，Fontconfig/curl 依赖，native-only |
 | 下载脚本 | [codex.conf](../install/items/codex.conf) | shell/env 是受限字段，不是任意 shell 代码 |
 | 自定义 APT 仓库 / COPR | [wezterm.conf](../install/items/wezterm.conf) | 方法与来源必须配对；APT 密钥字段不可省略 |
 | 工具链组件 | [rust-toolchain.conf](../install/items/rust-toolchain.conf) | components 与 workflow components 不是同一语义 |
@@ -173,6 +173,8 @@ bash tests/workflow-schema.sh
 
 ### 桌面字体声明
 
-修改字体下载先用 `fc-scan` 核对样本 family、字重和字符覆盖，不执行第三方脚本、不提交字体二进制。维护 `font_files` 与整组 `detect_files` 的一致性，目标目录按安装项 ID 固定；不要增加自定义路径字段、镜像、版本锁定或安装后验证。
+修改字体下载先用 `fc-scan` 核对样本 family、字重和字符覆盖，不执行第三方脚本、不提交字体二进制。下载项必须声明 `font_family`，维护 `font_files` 与整组 `detect_files` 的一致性，目标目录按安装项 ID 固定；不要增加自定义路径字段、镜像、版本锁定或安装后验证。
 
 `desktop-fonts` 的 Fontconfig 源仍是应用原生 XML；`condition=linux-kde` 和 `renderer=desktop-fonts` 是新增的受限 apply 字段。修改前阅读 `lib/desktop-fonts.sh` 与 `apply/renderers/desktop-fonts.py`，使用临时 KDE/GTK 配置验证保留用户设置、重复 apply、备份与恢复。不要向 Fish/Helix/Zellij 添加终端字体字段，不修改 WezTerm 的既有回退链，也不要把中文通配替换规则用于所有字体请求。
+
+桌面正文与等宽字体读取 Fontconfig XML 的 `system-ui`、`monospace` 首选 family，预检读取全部顶层 alias 的 prefer/accept family。默认正文为 Noto Sans CJK SC，不再提供苹方下载项。改 family 时同步核对安装项与 profile 关联；不要在处理器另写一份字体列表。下载夹具中的 example.org 仅用于测试，不是实际字体来源。

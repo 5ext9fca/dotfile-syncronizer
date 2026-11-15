@@ -140,11 +140,13 @@ APT/DNF 在下载前检查上述字体目录，已存在则跳过；其他平台
 
 ## Linux 桌面字体
 
-原生 Linux 三种包管理器分支新增 `pingfang-sc`、`noto-cjk`、`fontconfig` 和桌面渲染所需的 `python` 安装项，均为 native-only；macOS、Windows、WSL 不增加这些动作。APT/DNF 的 JetBrainsMono 发现也接受 `~/.local/share/fonts/JetBrainsMonoNerdFont-Regular.ttf`，避免对已散放的 Nerd Font 重复安装。
+原生 Linux 默认安装 `noto-cjk`、`fontconfig` 和桌面渲染所需的 `python`，均为 native-only；不再包含苹方下载项。已安装的苹方文件不会被删除。macOS、Windows、WSL 的字体安装选择不变。APT/DNF 的 JetBrainsMono 发现也接受 `~/.local/share/fonts/JetBrainsMonoNerdFont-Regular.ttf`，避免对已散放的 Nerd Font 重复安装。
 
-苹方来自第三方转载 [Kukuair/PingFang](https://github.com/Kukuair/PingFang)，页面未见明确授权说明，并非 Apple 官方 Linux 发行版。`font-download` 只下载六个 `PingFangSC-{Ultralight,Thin,Light,Regular,Medium,Semibold}.otf` 文件，不执行远端脚本。文件暂存、经 `fc-scan` 解析后才发布，全部完成后执行 `fc-cache`。下载或解析失败明确终止；安装成功仍仅取决于命令退出码，不作安装后存在性复核。
+字体安装仍由 `install/items/` 声明；桌面 family 与回退由 `configs/fontconfig/60-dotfiles-fonts.conf` 声明，见 [桌面字体](../apply/README.md#桌面字体)。更换 family 时应同时选择提供该字体的安装项；XML 不会自动推导包名或下载地址。
 
-目标固定为 `~/.local/share/fonts/<安装项 ID>/`，苹方实际目录为 `~/.local/share/fonts/pingfang-sc/`。安装前通过六个文件的共同存在性决定跳过，缺少任一文件就重新下载整组。字体二进制不入库，不固定版本，不自动升级。
+自定义 `font-download` 项必须提供 `source_url`（HTTPS 基础目录）、`font_files` 和 `font_family`。下载文件全部暂存、经 `fc-scan` 解析且每个文件均包含声明的 family 后才发布，随后执行 `fc-cache`；不执行远端脚本。下载、解析或 family 不匹配会明确终止；安装成功仍仅取决于命令退出码，不作安装后存在性复核。
+
+目标固定为 `~/.local/share/fonts/<安装项 ID>/`。作者应为整组文件声明 `detect_files`，缺少任一文件就重新下载整组；同时声明 Fontconfig/curl 依赖。字体二进制不入库，不固定版本，不自动升级。新增下载来源前需核实授权与来源，仓库不再提供第三方苹方下载声明。
 
 Noto CJK 使用 [APT fonts-noto-cjk](https://packages.ubuntu.com/noble/fonts-noto-cjk)、[DNF google-noto-sans-cjk-fonts](https://packages.fedoraproject.org/pkgs/google-noto-sans-cjk-fonts/google-noto-sans-cjk-fonts/) 或 [Pacman noto-fonts-cjk](https://archlinux.org/packages/extra/any/noto-fonts-cjk/)，保留 `Noto Sans CJK SC` family。字体来源不随镜像开关改变；发行版软件包仍使用当前包管理器仓库。
 

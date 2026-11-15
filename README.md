@@ -48,7 +48,7 @@ Unix 默认启用安装下载镜像，并在后续阶段初始化持久镜像设
 
 原生 Debian/Ubuntu 和 Fedora/CentOS/RHEL 的 Docker 使用官方 CE 仓库；Arch 使用发行版包，WSL 使用 Windows Docker Desktop。已有冲突包由操作者处理后重跑，详见 [Docker 所有权与软件来源](install/README.md#docker-所有权)。
 
-原生 Linux 默认安装苹方、Noto CJK 和 JetBrainsMono Nerd Font；原生 KDE 的 `desktop-fonts` 组件配置桌面正文和等宽回退。IDE 自行配置，应用重启或重新登录后生效。来源和适用范围见 [字体安装](install/README.md#linux-桌面字体) 与 [桌面字体部署](apply/README.md#桌面字体)。
+原生 Linux 默认安装 Noto CJK 和 JetBrainsMono Nerd Font（不再下载苹方）；原生 KDE 的 `desktop-fonts` 组件配置桌面正文和等宽回退。IDE 自行配置，应用重启或重新登录后生效。来源和适用范围见 [字体安装](install/README.md#linux-桌面字体) 与 [桌面字体部署](apply/README.md#桌面字体)。
 
 ## 更新配置与处理失败
 

@@ -71,4 +71,5 @@ install-report-unix	core	linux macos	bash	tests/install-report.sh	-
 install-report-windows	core	windows	powershell	tests/install-report.ps1	-
 install-report-portable	cross	linux macos	powershell	tests/install-report.ps1	-
 fonts-linux	core	linux	bash	tests/fonts.sh	-
-desktop-font-renderer	core	linux	python	tests/desktop-fonts.py	-
+desktop-font-renderer	core	linux macos	python	tests/desktop-fonts.py	-
+font-download-unix	core	linux macos	bash	tests/font-download.sh	-

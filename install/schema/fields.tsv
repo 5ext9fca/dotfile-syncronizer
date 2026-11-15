@@ -27,3 +27,4 @@ detect_files	.+
 detect_dirs	.+
 install_depends_on	[a-z0-9][a-z0-9-]*( [a-z0-9][a-z0-9-]*)*
 font_files	[A-Za-z0-9][A-Za-z0-9_-]*\.(otf|ttf)( [A-Za-z0-9][A-Za-z0-9_-]*\.(otf|ttf))*
+font_family	[A-Za-z0-9][A-Za-z0-9 ._-]*

@@ -17,6 +17,7 @@ fallback
 components
 workload
 font_files
+font_family
 depends_on
 environments
 provides

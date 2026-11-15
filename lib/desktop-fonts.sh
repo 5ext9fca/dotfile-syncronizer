@@ -6,18 +6,19 @@ desktop_fonts_supported() {
 }
 
 desktop_fonts_plan() {
-  local preview="${7:-0}"
+  local preview="$7" fontconfig="$8" families
   local component="$1" config="$2" session="$3" scratch="$4" plan="$5" directories="$6"
   local family available missing=0 relative target candidate before after root permissions parent
   command -v python3 >/dev/null || { printf 'error: desktop-fonts requires python3\n' >&2;return 1; }
+  families="$(command_capture 30 python3 "$apply_library_dir/../apply/renderers/desktop-fonts.py" --families "$fontconfig")" || return
   if command -v fc-list >/dev/null;then available="$(command_capture 30 fc-list --format '%{family}\n')" || return
   else available='';fi
-  for family in 'PingFang SC' 'JetBrainsMono Nerd Font' 'Noto Sans CJK SC';do
+  while IFS= read -r family;do
     if ! printf '%s\n' "$available" | awk -F ',' -v family="$family" '{for(i=1;i<=NF;i++) if($i==family) found=1} END {exit !found}';then
-      printf 'desktop-fonts: missing %s; run ./install/linux.sh --yes before deployment\n' "$family" >&2
+      printf 'desktop-fonts: missing %s; install the fonts declared by the selected Fontconfig source before deployment\n' "$family" >&2
       missing=1
     fi
-  done
+  done <<< "$families"
   if [[ "$missing" == 1 && "$preview" != 1 ]];then return 1;fi
   root="$(apply_nearest_directory "$config")" || return
   for relative in kdeglobals gtk-3.0/settings.ini gtk-4.0/settings.ini;do
@@ -31,7 +32,7 @@ desktop_fonts_plan() {
     done
     [[ ! -e "$target" || -f "$target" ]] || { printf 'error: desktop font target is not a file\n' >&2;return 1; }
     before="$(apply_state "$target")" || return
-    command_run probe 0 30 '' -- python3 "$apply_library_dir/../apply/renderers/desktop-fonts.py" "$relative" "$target" "$candidate" || return
+    command_run probe 0 30 '' -- python3 "$apply_library_dir/../apply/renderers/desktop-fonts.py" "$relative" "$target" "$candidate" "$fontconfig" || return
     after="$(apply_state "$target")" || return
     [[ "$before" == "$after" ]] || { printf 'error: desktop settings changed during rendering: %s\n' "$target" >&2;return 1; }
     permissions=644

@@ -51,7 +51,7 @@ DOTFILES_TEST_POWERSHELL=/path/to/pwsh ./tests/check.sh --suite cross --strict
 | 改动 | 直接检查入口 |
 | --- | --- |
 | 安装声明/schema | `tests/install-items.sh`、`tests/install-items.ps1`、`tests/install-parity.ps1` |
-| Linux 字体 | `tests/fonts.sh`、`tests/desktop-fonts.py`；隔离下载/解析错误、发现、候选文件、重复部署与恢复 |
+| Linux 字体 | `tests/font-download.sh`（Unix）、`tests/fonts.sh`（Linux）、`tests/desktop-fonts.py`（可移植）；隔离下载/解析错误、发现、候选文件、重复部署与恢复 |
 | 安装机制 | `tests/install-handlers.sh`、`tests/install-docker.sh`（CE 仓库、备份和存在性）、`tests/install-items.ps1`、相关平台 dry-run |
 | 执行策略 | `tests/install-policy.sh` / `.ps1` |
 | workflow/profile/阶段 | `tests/workflow-schema.sh` / `.ps1`、`tests/workflow.sh` / `.ps1` |

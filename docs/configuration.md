@@ -52,6 +52,7 @@ install/apply 允许 parser 去除行首尾空格，但 profile 和 mirror 并�
 | `key_url`、`keyring` | apt-repository 的密钥 URL 和受限文件名 |
 | `fallback` | apt-or-snap 的 Snap 包名 |
 | `components` | rustup 的逗号分隔组件，或 MSVC 组件标识；不是 workflow 的 component 映射 |
+| `font_family` | font-download 必填；每个下载文件必须包含的 family，限 ASCII 字母、数字、空格、点、下划线和连字符，首字符为字母或数字 |
 | `font_files` | font-download 必填；空格分隔的唯一 `.otf`/`.ttf` 文件名，文件主体限字母、数字、下划线、连字符，不允许路径 |
 | `workload` | MSVC workload 标识 |
 
@@ -83,7 +84,7 @@ install/apply 允许 parser 去除行首尾空格，但 profile 和 mirror 并�
 | `homebrew` | macos | source_url | download | - |
 | `winget` | windows | packages | winget | - |
 | `msvc` | windows | packages components workload | winget | - |
-| `font-download` | linux.apt linux.dnf linux.pacman | source_url font_files | download | - |
+| `font-download` | linux.apt linux.dnf linux.pacman | source_url font_files font_family | download | - |
 <!-- install-methods:end -->
 
 来源字段映射：
@@ -109,7 +110,7 @@ install/apply 允许 parser 去除行首尾空格，但 profile 和 mirror 并�
 
 `docker-ce` 将 `source_url` 作为 Docker 官方 Linux 仓库根地址，由 Linux 入口提供的发行版 ID 和 codename 选择 Debian/Ubuntu 的 APT 仓库或 Fedora/CentOS/RHEL 的 RPM 仓库。仅在所列 CE 包未全部安装时准备仓库；不支持的发行版在只读预检失败。替换仓库文件或密钥前备份到本次会话的 packages-backups/system/docker；不自动卸载冲突包或启动服务。Pacman 不使用此方法。
 
-`font-download` 的 source_url 必须是 HTTPS 基础目录，不接受 mirror_url；逐个追加 font_files 文件名下载，不执行脚本。目标固定为 `~/.local/share/fonts/<id>/`；作者应为整组字体声明 detect_files，并声明 Fontconfig/curl 依赖。临时文件全部解析后发布并刷新缓存，失败策略见安装手册。
+`font-download` 的 source_url 必须是 HTTPS 基础目录，不接受 mirror_url；逐个追加 font_files 文件名下载，不执行脚本。目标固定为 `~/.local/share/fonts/<id>/`；作者应为整组字体声明 detect_files，并声明 Fontconfig/curl 依赖。临时文件经 fc-scan 解析并逐个匹配 font_family 后发布并刷新缓存，失败策略见安装手册。
 
 ### 多种安装方式与应用发现
 
@@ -178,7 +179,7 @@ detect_dirs=applications:Docker.app
 
 `source`、`target` 和排除路径使用 `/`，不能是绝对路径，不能含 `.`、`..`、空路径段、冒号或反斜杠。文件 source 不能配 exclude。源路径及遍历到的未排除源文件不能是符号链接。
 
-`condition=linux-kde` 是可选的 Unix 环境条件，不满足时明确跳过。`renderer=desktop-fonts` 仅支持 Unix、linux-kde、hardlink 组合：除常规 source/target 映射外，为当前配置根下的 kdeglobals、gtk-3.0/settings.ini、gtk-4.0/settings.ini 渲染 copy 候选计划。这是固定处理器，不是任意命令；不接受自定义渲染目标。Windows 不接受这两个字段。
+`condition=linux-kde` 是可选的 Unix 环境条件，不满足时明确跳过。`renderer=desktop-fonts` 仅支持 Unix、linux-kde、hardlink 组合：除常规 source/target 映射外，为当前配置根下的 kdeglobals、gtk-3.0/settings.ini、gtk-4.0/settings.ini 渲染 copy 候选计划。这是固定处理器，不是任意命令；不接受自定义渲染目标。Windows 不接受这两个字段。该 renderer 的 source 必须是 Fontconfig XML 文件：顶层 alias 中的 system-ui 首选 family 用于 KDE/GTK 正文，monospace 首选 family 用于 KDE 等宽；全部 prefer/accept family 用于缺失字体预检。必须提供 sans-serif、serif、system-ui、monospace 四组非空 prefer，拒绝重复 alias、实体声明和无法安全表示的 family。
 
 例如 Fish 声明使用 `source=configs/fish`、`target=fish`；source 仍相对仓库根，不相对 configs 根。
 

@@ -37,7 +37,7 @@ flowchart TD
     S --> P
 ```
 
-`desktop-fonts` 在原生 KDE 中读取当前 KDE/GTK 设置，在调用者管理的临时目录渲染候选文件，复用 apply 的复制、备份和恢复；Fontconfig 规则保存在 `configs/fontconfig/` 并硬链接部署。
+`desktop-fonts` 在原生 KDE 中读取当前 KDE/GTK 设置，在调用者管理的临时目录渲染候选文件，复用 apply 的复制、备份和恢复；Fontconfig 规则保存在 `configs/fontconfig/` 并硬链接部署；同一 XML 声明驱动桌面字体 family 和缺失字体预检，不在处理器中固定字体名称。
 
 独立 apply 入口直接生成文件计划并执行，不经过软件安装阶段。镜像模块生成同一种 apply 文件计划，复用文件事务、备份和报告逻辑。
 

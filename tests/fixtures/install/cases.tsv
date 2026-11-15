@@ -73,3 +73,5 @@ font-traversal	linux.apt	0	0	error
 font-duplicate	linux.apt	0	0	error
 font-url-name	linux.apt	0	0	error
 font-empty	linux.apt	0	0	error
+font-family-missing	linux.apt	0	0	error
+font-family-invalid	linux.apt	0	0	error

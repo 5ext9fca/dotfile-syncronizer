@@ -91,9 +91,13 @@ apply 将 `apply/items/*.conf` 声明的源文件部署到目标配置目录，�
 ./apply/apply.sh --no-mirrors desktop-fonts
 ```
 
-组件要求 `PingFang SC`、`JetBrainsMono Nerd Font`、`Noto Sans CJK SC`。预览报告缺失项并提示安装；实际部署在任何文件变更前失败。完整安装的预览允许字体尚未安装，并不把配置前置检查当作安装成功判据。
+默认组件要求 `Noto Sans CJK SC` 和 `JetBrainsMono Nerd Font`。预览报告缺失项并提示安装；实际部署在任何文件变更前失败。完整安装的预览允许字体尚未安装，并不把配置前置检查当作安装成功判据。
 
-Fontconfig 规则通过显式映射硬链接，按请求 family 区分：sans-serif、serif、system-ui 默认优先苹方；monospace 依次使用 JetBrainsMono Nerd Font、Noto Sans CJK SC。显式网页/文档字体仍优先，不覆盖 Emoji 和其他文字的必要回退。详见 [Fontconfig 用户配置](https://fontconfig.pages.freedesktop.org/fontconfig/fontconfig-user.html)。
+Fontconfig 规则通过显式映射硬链接，按请求 family 区分：sans-serif、serif、system-ui 默认优先 Noto Sans CJK SC；monospace 依次使用 JetBrainsMono Nerd Font、Noto Sans CJK SC。显式网页/文档字体仍优先，不覆盖 Emoji 和其他文字的必要回退。
+
+字体行为统一读取该组件 `source` 指向的 Fontconfig XML：`system-ui` 的第一个 `prefer/family` 用作 KDE/GTK 正文字体，`monospace` 的第一个用作 KDE 等宽字体；顶层 alias 中全部 `prefer/family` 和 `accept/family` 去重后用于缺失字体预检。必须显式声明 sans-serif、serif、system-ui、monospace 四组非空 prefer；重复 alias、XML 实体及含控制字符、逗号、竖线、反斜杠或方括号的 family 会被拒绝。这里读取的是显式声明，不求解系统 Fontconfig 的 match/include 规则。
+
+修改 `configs/fontconfig/60-dotfiles-fonts.conf` 中的 family 即可改变上述行为，无需修改 Python/Bash；所选字体仍须由安装声明或用户自行安装。只保留 Fontconfig 部署、停用 KDE/GTK 修改时，从 apply 项移除 `renderer=desktop-fonts`；`condition=linux-kde` 仍决定整个组件的适用环境。更改安装集合使用 `install/items/` 和 workflow profile。详见 [Fontconfig 用户配置](https://fontconfig.pages.freedesktop.org/fontconfig/fontconfig-user.html)。
 
 渲染器读取当前 `kdeglobals`、`gtk-3.0/settings.ini`、`gtk-4.0/settings.ini`，只更改托管字体 family；保留字号、字体参数、缩放、抗锯齿、其他键和注释及文件权限。KDE 未声明项先通过 KConfig 查询继承设置，仍无值时使用 Plasma 内置默认字号（常规 10、小字号 8）；GTK 缺失项通过运行中的 GTK 读取默认字体。无法安全解析、重复托管键、不可变 KConfig 标记或设置路径为符号链接时明确失败。Python 3 和 KConfig 读取工具必须在配置预检时可用。
 
@@ -108,4 +112,4 @@ fc-match 'monospace:charset=0041'
 fc-match 'monospace:charset=4e2d'
 ```
 
-预期依次为苹方、苹方、JetBrainsMono、Noto CJK。中文验收使用字符条件，单独 `lang=zh-cn` 不保证选到含中文字符的第一个 family。另需在 KDE、GTK、浏览器默认正文和 WezTerm 检查中文标点、粗体、图标和表格对齐。
+预期依次为 Noto CJK、Noto CJK、JetBrainsMono、Noto CJK。中文验收使用字符条件，单独 `lang=zh-cn` 不保证选到含中文字符的第一个 family。另需在 KDE、GTK、浏览器默认正文和 WezTerm 检查中文标点、粗体、图标和表格对齐。

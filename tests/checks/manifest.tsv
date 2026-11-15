@@ -1,0 +1,74 @@
+# id	suite	hosts	runtime	entry	arguments
+check-runner-unix	core	linux macos	bash	tests/check-runner.sh	-
+check-runner-windows	core	windows	powershell	tests/check-runner.ps1	-
+install-unix	core	linux macos	bash	tests/install-items.sh	-
+docker-unix	core	linux macos	bash	tests/install-docker.sh	-
+handlers-unix	core	linux macos	bash	tests/install-handlers.sh	-
+entry-linux	core	linux	bash	tests/install-entry.sh	-
+workflow-schema-unix	core	linux macos	bash	tests/workflow-schema.sh	-
+workflow-schema-windows	core	windows	powershell	tests/workflow-schema.ps1	-
+workflow-unix	core	linux macos	bash	tests/workflow.sh	-
+apply-schema-unix	core	linux macos	bash	tests/apply-schema.sh	-
+apply-unix	core	linux macos	bash	tests/apply.sh	-
+mirrors-unix	core	linux macos	bash	tests/mirrors.sh	-
+install-windows	core	windows	powershell	tests/install-items.ps1	-
+workflow-windows	core	windows	powershell	tests/workflow.ps1	-
+apply-schema-windows	core	windows	powershell	tests/apply-schema.ps1	-
+apply-windows	core	windows	powershell	tests/apply.ps1	-
+workflow-schema-portable	cross	linux macos	powershell	tests/workflow-schema.ps1	-
+install-parity	cross	linux macos windows	powershell	tests/install-parity.ps1	-
+linux-mirrors	dry-run	linux	bash	install/linux.sh	--dry-run --yes
+linux-upstream	dry-run	linux	bash	install/linux.sh	--dry-run --yes --no-china-mirrors
+macos-mirrors	dry-run	macos	bash	install/macos.sh	--dry-run
+macos-upstream	dry-run	macos	bash	install/macos.sh	--dry-run --no-china-mirrors
+shell-lint	lint	linux macos	bash	tests/checks/lint.sh	-
+apply-contract-unix	core	linux macos	bash	tests/apply-contract.sh	-
+apply-contract-windows	core	windows	powershell	tests/apply-contract.ps1	-
+apply-contract-portable	cross	linux macos	powershell	tests/apply-contract.ps1	-
+execution-contract-unix	core	linux macos	bash	tests/execution-contract.sh	-
+execution-contract-windows	core	windows	powershell	tests/execution-contract.ps1	-
+execution-contract-portable	cross	linux macos	powershell	tests/execution-contract.ps1	-
+atomic-report-unix	core	linux macos	bash	tests/atomic-report.sh	-
+atomic-report-windows	core	windows	powershell	tests/atomic-report.ps1	-
+atomic-report-portable	cross	linux macos	powershell	tests/atomic-report.ps1	-
+deployment-lock-unix	core	linux macos	bash	tests/deployment-lock.sh	-
+deployment-lock-windows	core	windows	powershell	tests/deployment-lock.ps1	-
+deployment-lock-portable	cross	linux macos	powershell	tests/deployment-lock.ps1	-
+deployment-processes	core	linux macos windows	python	tests/deployment-processes.py	-
+data-contract-unix	core	linux macos	bash	tests/data-contract.sh	-
+data-contract-windows	core	windows	powershell	tests/data-contract.ps1	-
+data-contract-portable	cross	linux macos	powershell	tests/data-contract.ps1	-
+command-unix	core	linux macos	bash	tests/command.sh	-
+command-windows	core	windows	powershell	tests/command.ps1	-
+command-portable	cross	linux macos	powershell	tests/command.ps1	-
+command-terminal	core	linux macos	python	tests/command-terminal.py	-
+workflow-resume-unix	core	linux macos	bash	tests/workflow-resume.sh	-
+workflow-resume-windows	core	windows	powershell	tests/workflow-resume.ps1	-
+workflow-resume-portable	cross	linux macos	powershell	tests/workflow-resume.ps1	-
+install-resume-unix	core	linux macos	bash	tests/install-resume.sh	-
+install-resume-windows	core	windows	powershell	tests/install-resume.ps1	-
+install-resume-portable	cross	linux macos	powershell	tests/install-resume.ps1	-
+install-policy-unix	core	linux macos	bash	tests/install-policy.sh	-
+install-policy-windows	core	windows	powershell	tests/install-policy.ps1	-
+install-policy-portable	cross	linux macos	powershell	tests/install-policy.ps1	-
+plan-explain-unix	core	linux macos	bash	tests/plan-explain.sh	-
+plan-explain-windows	core	windows	powershell	tests/plan-explain.ps1	-
+plan-explain-portable	cross	linux macos	powershell	tests/plan-explain.ps1	-
+install-discovery-unix	core	linux macos	bash	tests/install-discovery.sh	-
+install-discovery-windows	core	windows	powershell	tests/install-discovery.ps1	-
+install-discovery-portable	cross	linux macos	powershell	tests/install-discovery.ps1	-
+install-record-unix	core	linux macos	bash	tests/install-record.sh	-
+install-decision-unix	core	linux macos	bash	tests/install-decision.sh	-
+install-decision-windows	core	windows	powershell	tests/install-decision.ps1	-
+install-decision-portable	cross	linux macos	powershell	tests/install-decision.ps1	-
+install-compat-unix	core	linux macos	bash	tests/install-compat.sh	-
+install-compat-windows	core	windows	powershell	tests/install-compat.ps1	-
+install-compat-portable	cross	linux macos	powershell	tests/install-compat.ps1	-
+install-dependencies-unix	core	linux macos	bash	tests/install-dependencies.sh	-
+install-dependencies-windows	core	windows	powershell	tests/install-dependencies.ps1	-
+install-dependencies-portable	cross	linux macos	powershell	tests/install-dependencies.ps1	-
+install-report-unix	core	linux macos	bash	tests/install-report.sh	-
+install-report-windows	core	windows	powershell	tests/install-report.ps1	-
+install-report-portable	cross	linux macos	powershell	tests/install-report.ps1	-
+fonts-linux	core	linux	bash	tests/fonts.sh	-
+desktop-font-renderer	core	linux	python	tests/desktop-fonts.py	-

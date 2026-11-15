@@ -1,0 +1,34 @@
+# base: discovery/tool.conf; operation, line, expected, replacement
+delete	3	methods=cask brew manual	-
+delete	4	preferred_method=brew	-
+delete	5		-
+delete	6	[macos/cask]	-
+delete	7	packages=tool-desktop	-
+delete	8	source_kind=default	-
+delete	9	detect_dirs=brew_prefix:Caskroom/tool-desktop	-
+delete	10	detect_files=brew_prefix:Applications/Tool.app/tool	-
+delete	11		-
+delete	12	[macos/brew]	-
+insert	3	-	method=brew
+delete	15	detect_files=brew_prefix:bin/tool	-
+delete	16		-
+delete	17	[macos/manual]	-
+delete	18	detect_dirs=brew_prefix:Manual Tool.app	-
+delete	19	detect_files=brew_prefix:Manual Tool.app/tool	-
+delete	20		-
+delete	21	[windows]	-
+delete	22	order=20	-
+delete	23	methods=winget manual	-
+delete	24	preferred_method=winget	-
+delete	25		-
+delete	26	[windows/winget]	-
+delete	27	packages=Vendor.Tool	-
+delete	28	source_kind=winget	-
+delete	29	source_repo=winget	-
+delete	30	detect_files=program_files:Tool/tool.exe	-
+delete	31		-
+delete	32	[windows/manual]	-
+delete	33	detect_dirs=program_files:Manual Tool	-
+delete	34	detect_files=program_files:Manual Tool/tool.exe	-
+insert	15	-	check=tool
+insert	15	-	detect_files=path:tool

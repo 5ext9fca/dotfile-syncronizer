@@ -1,0 +1,4 @@
+# base: discovery/tool.conf; operation, line, expected, replacement
+insert	35	-	
+insert	35	-	[macos/script]
+insert	35	-	detect_dirs=home:tool

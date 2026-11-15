@@ -1,0 +1,13 @@
+session
+profile
+stage
+status
+exit_code
+elapsed_seconds
+log
+report
+recovery_journal
+reason
+schema_version
+child_report
+retry_stage

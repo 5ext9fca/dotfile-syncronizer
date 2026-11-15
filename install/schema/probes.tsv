@@ -1,0 +1,8 @@
+# state_pattern	action	reason
+^$	install	requested
+^present$	skip	already-installed
+^upgrade$	upgrade	existing-environment
+^apt:[^|]+$	install	requested
+^snap:[^|]+$	install	requested
+^modify:[^|]+$	install	requested
+^discovered:[a-z][a-z-]*$	skip	discovered-installation

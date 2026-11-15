@@ -1,0 +1,7 @@
+# method	operation	timeout_seconds	success_codes
+*	probe	30	0
+*	install	0	0
+*	download	120	0
+*	modify	0	0
+msvc	modify	0	0,3010
+unknown	install	0	0

@@ -1,0 +1,10 @@
+# code	dry_run	status	reason
+0	0	success	completed
+0	1	planned	dry-run
+75	0	deferred	rerun-required
+75	1	deferred	rerun-required
+130	0	interrupted	signal-int
+143	0	interrupted	signal-term
+1	0	failed	exit-1
+127	0	failed	exit-127
+124	0	failed	command-timeout

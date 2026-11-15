@@ -1,0 +1,4 @@
+# dotfiles|git-result|1
+key|status
+core.editor|success
+invalid

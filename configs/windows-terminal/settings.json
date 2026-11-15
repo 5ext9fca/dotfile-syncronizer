@@ -1,0 +1,65 @@
+{
+  "$schema": "https://aka.ms/terminal-profiles-schema",
+  "defaultProfile": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
+  "launchMode": "maximized",
+  "alwaysShowTabs": true,
+  "showTabsInTitlebar": true,
+  "profiles": {
+    "defaults": {
+      "colorScheme": "Tokyo Night",
+      "font": {
+        "face": "JetBrainsMono Nerd Font",
+        "size": 14
+      },
+      "historySize": 10000,
+      "opacity": 90,
+      "padding": "8"
+    },
+    "list": [
+      {
+        // PowerShell 7.6.6/7.6.7 crash on startup with "totalWidth ('-17')"
+        // while showing the zh-CN update notification. Drop this workaround
+        // after upgrading to a release that fixes the padding calculation.
+        "environment": {
+          "POWERSHELL_UPDATECHECK": "Off"
+        },
+        "guid": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
+        "hidden": false,
+        "name": "PowerShell 7",
+        "source": "Windows.Terminal.PowershellCore",
+        "startingDirectory": "%USERPROFILE%"
+      },
+      {
+        "commandline": "wsl.exe -d FedoraLinux-44",
+        "guid": "{2c4de342-38b7-51cf-b940-2309a097f518}",
+        "hidden": false,
+        "name": "Fedora Linux"
+      }
+    ]
+  },
+  "schemes": [
+    {
+      "name": "Tokyo Night",
+      "background": "#1A1B26",
+      "foreground": "#C0CAF5",
+      "black": "#15161E",
+      "red": "#F7768E",
+      "green": "#9ECE6A",
+      "yellow": "#E0AF68",
+      "blue": "#7AA2F7",
+      "purple": "#BB9AF7",
+      "cyan": "#7DCFFF",
+      "white": "#A9B1D6",
+      "brightBlack": "#414868",
+      "brightRed": "#F7768E",
+      "brightGreen": "#9ECE6A",
+      "brightYellow": "#E0AF68",
+      "brightBlue": "#7AA2F7",
+      "brightPurple": "#BB9AF7",
+      "brightCyan": "#7DCFFF",
+      "brightWhite": "#C0CAF5",
+      "cursorColor": "#C0CAF5",
+      "selectionBackground": "#33467C"
+    }
+  ]
+}

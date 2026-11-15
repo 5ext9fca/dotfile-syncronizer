@@ -1,0 +1,20 @@
+[language-server.ty]
+command = "ty"
+args = ["server"]
+
+[[language]]
+name = "python"
+language-servers = ["ty", { name = "ruff", except-features = ["hover"] }]
+auto-format = true
+
+[[language]]
+name = "rust"
+auto-format = true
+
+[[language]]
+name = "c"
+auto-format = true
+
+[[language]]
+name = "cpp"
+auto-format = true

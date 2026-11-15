@@ -1,0 +1,6 @@
+# exit_code	status	reason
+0	success	completed
+75	deferred	rerun-required
+124	failed	command-timeout
+130	interrupted	signal-int
+143	interrupted	signal-term

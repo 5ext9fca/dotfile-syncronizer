@@ -1,0 +1,1 @@
+tool|configs/fontconfig/60-dotfiles-fonts.conf|config_home|fontconfig/conf.d/60-dotfiles-fonts.conf|hardlink||linux-kde|desktop-fonts

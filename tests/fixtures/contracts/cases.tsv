@@ -1,0 +1,8 @@
+canonical	valid
+reordered	valid
+unknown-version	invalid
+unknown-kind	invalid
+missing-header	invalid
+duplicate-field	invalid
+unknown-field	invalid
+partial-record	invalid

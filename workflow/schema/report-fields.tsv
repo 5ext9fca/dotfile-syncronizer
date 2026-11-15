@@ -1,0 +1,14 @@
+# field	type	meaning
+session	string	Shared run identifier, including the WSL child
+profile	string	Selected profile
+stage	string	Stage identifier from stages.tsv
+status	enum	pending running success planned skipped failed blocked deferred interrupted
+exit_code	integer	Stage exit code; zero for unexecuted stages
+elapsed_seconds	integer	Elapsed whole seconds
+log	path	Stage log, empty when not retained
+report	path	Stage result, empty when unavailable
+recovery_journal	string	Comma-separated recovery journals
+reason	string	Selection or outcome explanation
+schema_version	integer	1
+child_report	string	Comma-separated child workflow reports
+retry_stage	string	First unsuccessful stage, empty on success

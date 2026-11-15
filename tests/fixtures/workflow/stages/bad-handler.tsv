@@ -1,0 +1,9 @@
+# platform	order	id	gate	preflight	action
+unix	10	packages	always	packages	$(touch-bad)
+unix	20	configuration	always	configuration	configuration
+unix	30	mirrors	mirrors	mirrors	mirrors
+unix	40	shell	shell	shell	shell
+windows	10	packages	always	packages	packages
+windows	20	git	always	git	git
+windows	30	configuration	always	configuration	configuration
+windows	40	wsl	wsl	wsl	wsl

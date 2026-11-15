@@ -1,0 +1,10 @@
+# state	action	reason
+<empty>	install	requested
+present	skip	already-installed
+upgrade	upgrade	existing-environment
+apt:tool	install	requested
+snap:tool	install	requested
+modify:C:\Program Files\Tool	install	requested
+invalid	invalid	invalid
+apt:	invalid	invalid
+present|bad	invalid	invalid

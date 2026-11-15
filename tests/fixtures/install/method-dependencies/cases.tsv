@@ -1,0 +1,11 @@
+# name|search|replacement|outcome|dependencies|profile closure|failure hint
+brew|preferred_method=brew|preferred_method=brew|ok|shared build-brew|shared build-brew tool|
+cask|preferred_method=brew|preferred_method=cask|ok|shared build-cask|build-cask shared tool|
+selected-missing|depends_on=shared build-brew|depends_on=shared missing|error|||missing dependency
+selected-cycle|depends_on=shared build-brew|depends_on=shared tool|error|||dependency cycle
+unselected-missing|depends_on=build-cask|depends_on=missing|ok|shared build-brew|shared build-brew tool|
+unselected-cycle|depends_on=build-cask|depends_on=tool|ok|shared build-brew|shared build-brew tool|
+selected-duplicate|depends_on=shared build-brew|depends_on=shared build-brew build-brew|error|||duplicate dependency
+unselected-duplicate|depends_on=build-cask|depends_on=build-cask build-cask|error|||duplicate dependency
+unselected-invalid|depends_on=build-cask|depends_on=Bad|error|||invalid depends_on
+manual-dependency|[macos/manual]|[macos/manual]\ndepends_on=shared|error|||manual cannot declare installation dependencies

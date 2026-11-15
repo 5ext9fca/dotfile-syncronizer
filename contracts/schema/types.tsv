@@ -1,0 +1,10 @@
+# kind	version
+install-plan	6
+apply-plan	1
+install-result	2
+apply-result	1
+git-result	1
+stage-result	1
+command-result	1
+workflow-request	1
+workflow-summary	1

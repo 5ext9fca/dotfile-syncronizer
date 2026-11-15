@@ -1,0 +1,64 @@
+name: Repository contracts
+on:
+  push:
+    paths: ['contracts/**', 'workflow/**', 'install/**', 'lib/**', 'apply/**', 'mirrors/**', 'configs/**', 'tests/**', '.github/workflows/install.yml']
+  pull_request:
+    paths: ['contracts/**', 'workflow/**', 'install/**', 'lib/**', 'apply/**', 'mirrors/**', 'configs/**', 'tests/**', '.github/workflows/install.yml']
+  workflow_dispatch:
+jobs:
+  unix:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Native contracts (including macOS Bash 3.2)
+        run: /bin/bash tests/check.sh --suite core --strict
+      - name: ShellCheck
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          /bin/bash tests/check.sh --suite lint --strict
+      - name: Native dry runs
+        run: /bin/bash tests/check.sh --suite dry-run --strict
+  fedora:
+    runs-on: ubuntu-latest
+    container: registry.fedoraproject.org/fedora:latest
+    steps:
+      - name: Install test prerequisites
+        run: dnf install -y bash coreutils diffutils findutils gawk git grep sed python3 util-linux glibc-common sudo shadow-utils ShellCheck
+      - uses: actions/checkout@v4
+      - name: Prepare unprivileged test user
+        run: |
+          useradd --create-home dotfiles
+          chown -R dotfiles:dotfiles "$GITHUB_WORKSPACE"
+      - name: Fedora DNF contracts
+        run: sudo -H -u dotfiles env USER=dotfiles /bin/bash tests/check.sh --suite core --strict
+      - name: ShellCheck
+        run: sudo -H -u dotfiles env USER=dotfiles /bin/bash tests/check.sh --suite lint --strict
+      - name: Fedora native dry runs
+        run: sudo -H -u dotfiles env USER=dotfiles /bin/bash tests/check.sh --suite dry-run --strict
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Windows PowerShell 5.1 contracts
+        shell: powershell
+        run: |
+          & ./tests/check.ps1 -Suite core -Strict
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          & ./tests/check.ps1 -Suite cross -Strict
+      - name: PowerShell 7 contracts
+        shell: pwsh
+        run: |
+          ./tests/check.ps1 -Suite core -Strict
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          ./tests/check.ps1 -Suite cross -Strict

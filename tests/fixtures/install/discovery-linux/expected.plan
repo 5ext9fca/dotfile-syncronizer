@@ -1,0 +1,1 @@
+tool|20|cargo|tool|default||||||||||||||||native wsl|||apt cargo manual|cargo|home:.cargo/bin/tool||apt:file:root:usr/bin/tool;cargo:file:home:.cargo/bin/tool;manual:file:home:Manual Tool/tool;manual:directory:home:Manual Tool|||offline-preferred-method||install|requested|config||6

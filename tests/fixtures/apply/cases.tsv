@@ -1,0 +1,23 @@
+# name	platform	outcome
+valid	unix	ok
+windows	windows	ok
+absent-platform	windows	ok
+spaces	unix	ok
+unknown	unix	error
+duplicate	unix	error
+duplicate-section	unix	error
+absolute	unix	error
+dot-segment	unix	error
+windows-link	windows	error
+wrong-root	unix	error
+wrong-platform	unix	error
+pipe	unix	error
+missing	unix	error
+exclude-escape	unix	error
+empty-exclusion	unix	error
+empty-file	unix	error
+uppercase-key	unix	error
+desktop-fonts	unix	ok
+desktop-fonts-windows	windows	error
+desktop-fonts-condition	unix	error
+desktop-fonts-copy	unix	error

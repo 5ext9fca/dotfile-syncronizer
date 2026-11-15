@@ -1,0 +1,14 @@
+# state|mode|legacy_check|legacy_present|action|reason|result_state
+|normal||0|install|requested|
+present|normal||0|skip|already-installed|present
+upgrade|normal||0|skip|already-installed|present
+upgrade|resume||0|skip|resume-already-installed|present
+|resume||0|install|resume-recheck-required|
+discovered:manual|normal||0|skip|discovered-installation|discovered:manual
+discovered:manual|resume||0|skip|resume-already-installed|discovered:manual
+modify:C:/Build Tools|resume||0|install|requested|modify:C:/Build Tools
+apt:tool|normal||0|install|requested|apt:tool
+snap:tool|resume||0|install|requested|snap:tool
+|normal|old-command|1|skip|already-installed|
+|resume|old-command|1|skip|resume-already-installed|present
+|resume|old-command|0|install|requested|

@@ -1,0 +1,11 @@
+# environment variable	configuration key
+RUSTUP_DIST_SERVER	rust_dist
+RUSTUP_UPDATE_ROOT	rust_update
+PIP_INDEX_URL	pypi
+GOPROXY	go_proxy
+GOSUMDB	go_sumdb
+HOMEBREW_BREW_GIT_REMOTE	brew_git
+HOMEBREW_CORE_GIT_REMOTE	brew_core
+HOMEBREW_CASK_GIT_REMOTE	brew_cask
+HOMEBREW_BOTTLE_DOMAIN	brew_bottles
+HOMEBREW_API_DOMAIN	brew_api

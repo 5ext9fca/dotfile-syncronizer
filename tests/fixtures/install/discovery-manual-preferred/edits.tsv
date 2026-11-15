@@ -1,0 +1,3 @@
+# base: discovery/tool.conf; operation, line, expected, replacement
+delete	4	preferred_method=brew	-
+insert	4	-	preferred_method=manual

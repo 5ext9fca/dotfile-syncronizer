@@ -1,0 +1,15 @@
+unix-all	unix	unix	-	-	1	-	valid
+windows-all	windows	windows	-	-	1	-	valid
+only-config	unix	unix	configuration	-	1	-	valid
+resume-config	windows	windows	-	configuration	1	-	valid
+no-mirrors	unix	unix	-	-	0	-	valid
+profile-off	unix	off	-	-	1	-	valid
+no-wsl	windows	off	-	-	1	-	valid
+reordered	unix	unix	-	-	1	reordered.tsv	valid
+unknown-stage	unix	unix	missing	-	1	-	invalid
+both-selectors	unix	unix	shell	mirrors	1	-	invalid
+unknown-platform	other	unix	-	-	1	-	invalid
+duplicate	unix	unix	-	-	1	duplicate.tsv	invalid
+huge-order	unix	unix	-	-	1	huge-order.tsv	invalid
+bad-handler	unix	unix	-	-	1	bad-handler.tsv	invalid
+wrong-platform-handler	unix	unix	-	-	1	wrong-platform-handler.tsv	invalid

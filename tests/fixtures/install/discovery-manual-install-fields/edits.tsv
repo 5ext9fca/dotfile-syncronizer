@@ -1,0 +1,2 @@
+# base: discovery/tool.conf; operation, line, expected, replacement
+insert	18	-	packages=tool

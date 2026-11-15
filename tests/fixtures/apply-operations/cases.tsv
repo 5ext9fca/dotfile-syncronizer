@@ -1,0 +1,7 @@
+# name	initial	unix_action	windows_action	unix_backup	windows_backup	guard
+new	absent	hardlink	copy	0	0	0
+replace	old	hardlink	copy	1	1	0
+same-content	same	hardlink	skip	1	0	0
+same-identity	linked	skip	skip	0	0	0
+directory	directory	hardlink	copy	1	1	0
+modified-after-apply	old	hardlink	copy	1	1	1

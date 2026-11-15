@@ -1,0 +1,3 @@
+# dotfiles|install-result|99
+id|status|elapsed_seconds|reason
+tool|skipped|0|already-installed

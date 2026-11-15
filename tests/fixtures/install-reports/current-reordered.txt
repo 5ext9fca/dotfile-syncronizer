@@ -1,0 +1,3 @@
+# dotfiles|install-result|2
+decision_reason|detected_paths|id|status|elapsed_seconds|reason|selected_method|detected_method
+discovered-installation|["/Applications/Tool.app"]|tool|skipped|0|discovered-installation|cask|manual

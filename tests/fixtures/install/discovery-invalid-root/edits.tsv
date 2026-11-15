@@ -1,0 +1,3 @@
+# base: discovery/tool.conf; operation, line, expected, replacement
+delete	15	detect_files=brew_prefix:bin/tool	-
+insert	15	-	detect_files=unknown:bin/tool

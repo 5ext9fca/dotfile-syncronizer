@@ -1,0 +1,8 @@
+id
+status
+elapsed_seconds
+reason
+selected_method
+detected_method
+detected_paths
+decision_reason

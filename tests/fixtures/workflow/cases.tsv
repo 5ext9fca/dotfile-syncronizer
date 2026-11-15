@@ -1,0 +1,15 @@
+valid	valid
+reordered	valid
+missing-version	invalid
+unknown-version	invalid
+duplicate-key	invalid
+unknown-key	invalid
+uppercase-key	invalid
+empty-selection	invalid
+spaces	invalid
+duplicate-component	invalid
+bad-shell	invalid
+bad-lifecycle	invalid
+command-data	invalid
+empty	invalid
+missing-components	invalid

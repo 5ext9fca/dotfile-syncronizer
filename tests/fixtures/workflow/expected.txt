@@ -1,0 +1,6 @@
+schema_version=1
+install=all
+components=fish:fish git:git
+shell=fish
+mirrors=initialize
+wsl=none

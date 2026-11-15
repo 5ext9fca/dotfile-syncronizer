@@ -1,0 +1,7 @@
+valid	valid
+override	valid
+duplicate	invalid
+unknown	invalid
+timeout	invalid
+interrupt	invalid
+missing	invalid

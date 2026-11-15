@@ -1,0 +1,7 @@
+# name|expected normalized row (error means reject without partial output)
+legacy|tool|skipped|0|already-installed||||
+legacy-reordered|tool|skipped|0|already-installed||||
+current-reordered|tool|skipped|0|discovered-installation|cask|manual|["/Applications/Tool.app"]|discovered-installation
+unknown-version|error
+legacy-unknown-field|error
+legacy-partial|error

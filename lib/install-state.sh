@@ -1,0 +1,111 @@
+# shellcheck shell=bash
+install_probe() {
+  local method="$1" record="$2" context="$3" package output code
+  if [[ -n "$(install_field "$record" discovery)" ]];then install_discover "$record" "$context";return;fi
+  case "$method" in
+    pipx)
+      package="$(install_field "$record" packages)"
+      if command -v pipx >/dev/null 2>&1; then
+        output="$(install_probe_capture "$method" pipx list --short)" || return
+        if printf '%s\n' "$output" | awk -v name="$package" '$1==name {found=1} END {exit !found}'; then printf 'present\n'; fi
+      fi ;;
+    xcode)
+      if install_probe_capture "$method" xcode-select -p >/dev/null 2>&1; then printf 'present\n'
+      else code=$?;case "$code" in 1|127) ;; *) return "$code" ;; esac;fi ;;
+    homebrew) if command -v "$(install_context "$context" 3)" >/dev/null 2>&1; then printf 'present\n'; fi ;;
+    apt-or-snap) install_probe_apt_or_snap "$record" "$context" ;;
+    rustup) install_probe_rustup "$record" "$context" ;;
+  esac
+}
+
+install_resume_package_state() {
+  local record="$1" context="$2" method package output code command packages=()
+  method="$(install_field "$record" method)"
+  if [[ "$method" == docker-ce ]];then method="${context%%|*}";method="${method#linux.}";fi
+  read -r -a packages <<< "$(install_field "$record" packages)"
+  for package in "${packages[@]}";do
+    code=0;output=''
+    case "$method" in
+      apt|apt-repository)
+        command=dpkg-query
+        command -v "$command" >/dev/null 2>&1 || return 0
+        # dpkg-query expands this format variable, not the shell.
+        # shellcheck disable=SC2016
+        output="$(install_probe_capture "$method" "$command" -W '-f=${Status}' "$package")" || code=$?
+        if (( code == 0 )) && [[ "$output" != 'install ok installed' ]];then return 0;fi ;;
+      dnf|dnf-copr)
+        command -v rpm >/dev/null 2>&1 || return 0
+        output="$(install_probe_capture "$method" rpm -q "$package")" || code=$? ;;
+      pacman)
+        command -v pacman >/dev/null 2>&1 || return 0
+        output="$(install_probe_capture "$method" pacman -Q "$package")" || code=$? ;;
+      brew|cask)
+        command="$(install_context "$context" 3)"
+        command -v "$command" >/dev/null 2>&1 || return 0
+        if [[ "$method" == brew ]];then
+          output="$(install_probe_capture "$method" "$command" list --formula --versions "$package")" || code=$?
+        else output="$(install_probe_capture "$method" "$command" list --cask --versions "$package")" || code=$?;fi
+        [[ "$code" != 0 || -n "$output" ]] || return 0 ;;
+      cargo)
+        command -v cargo >/dev/null 2>&1 || return 0
+        output="$(install_probe_capture "$method" cargo install --list)" || return
+        printf '%s\n' "$output" | awk -v name="$package" '$1==name && $2~/^v/ {found=1} END {exit !found}' || return 0 ;;
+      *) return 0 ;;
+    esac
+    case "$code" in 0) ;; 1) return 0 ;; *) return "$code" ;; esac
+  done
+  [[ ${#packages[@]} -gt 0 ]] && printf 'present\n'
+  return 0
+}
+
+install_evaluate_record() {
+  local record="$1" context="$2" mode="$3" method state probe_command command_present=0 decision action reason observation detected_method='' detected_paths='' decision_reason discovery
+  method="$(install_field "$record" method)";probe_command="$(install_field "$record" probe_command)"
+  discovery="$(install_field "$record" discovery)"
+  if [[ -n "$discovery" ]];then
+    observation="$(install_discovery_observation "$record" "$context")" || return
+    detected_method="${observation%%|*}";detected_paths="${observation#*|}"
+    state='';[[ -z "$detected_method" ]] || state="discovered:$detected_method"
+  else
+    case "$method" in
+      docker-ce|apt|apt-repository|dnf|dnf-copr|pacman|brew|cask|cargo) state="$(install_resume_package_state "$record" "$context")" || return ;;
+      *) state="$(install_probe "$method" "$record" "$context")" || return ;;
+    esac
+  fi
+  if [[ "$method" == docker-ce && "$state" != present ]];then install_docker_target "$context" >/dev/null || return;fi
+  decision="$(install_decide "$state" "$mode" "$probe_command" 0 "$discovery")" || return
+  if [[ "${decision%%|*}" != skip && -n "$probe_command" ]];then
+    if command -v "$probe_command" >/dev/null 2>&1;then
+      install_probe_capture "$method" "$probe_command" --version >/dev/null || return
+      command_present=1
+    fi
+  fi
+  decision="$(install_decide "$state" "$mode" "$probe_command" "$command_present" "$discovery")" || return
+  action="${decision%%|*}";decision="${decision#*|}";reason="${decision%%|*}";decision="${decision#*|}";state="${decision%%|*}";decision_reason="${decision#*|}"
+  install_record_update "$record" action "$action" reason "$reason" state "$state" detected_method "$detected_method" detected_paths "$detected_paths" decision_reason "$decision_reason"
+}
+
+# Query only installed toolchains/components; never invoke rustc (which may download).
+install_probe_rustup() {
+  local record="$1" context="$2" command=rustup platform prefix toolchain output line resolved='' component components
+  platform="$(install_context "$context" 1)"
+  case "$platform" in
+    linux.apt) command=/usr/bin/rustup ;;
+    macos) prefix="$(install_context "$context" 4)";command="$prefix/opt/rustup/bin/rustup" ;;
+    linux.dnf) command="$HOME/.cargo/bin/rustup" ;;
+  esac
+  command -v "$command" >/dev/null 2>&1 || return 0
+  toolchain="$(install_field "$record" packages)"
+  output="$(install_probe_capture rustup "$command" toolchain list)" || return
+  while IFS= read -r line;do
+    line="${line%% *}"
+    if [[ "$line" == "$toolchain" || "$line" == "$toolchain"-* ]];then resolved="$line";break;fi
+  done <<< "$output"
+  [[ -n "$resolved" ]] || return 0
+  output="$(install_probe_capture rustup "$command" component list --installed --toolchain "$resolved")" || return
+  components="$(install_field "$record" components)";components="${components//,/ }"
+  for component in $components;do
+    printf '%s\n' "$output" | awk -v name="$component" '$1==name || index($1,name "-")==1 {found=1} END {exit !found}' || return 0
+  done
+  printf 'present\n'
+}

@@ -1,0 +1,8 @@
+# field	pattern	required
+source	.+	yes
+target_root	config_home|local_app_data	yes
+target	.+	yes
+method	hardlink|copy	yes
+exclude	.+	no
+condition	linux-kde	no
+renderer	desktop-fonts	no

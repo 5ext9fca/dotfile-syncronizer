@@ -22,7 +22,7 @@
 | --- | --- | --- |
 | 增加一种软件 | `install/items/<id>.conf` | 平台入口、阶段表、报告契约 |
 | 部署新应用的文件 | `configs/<应用>/` + `apply/items/<id>.conf` | 直接在入口追加 ln/cp |
-| 改安装集合/组件关联 | 已被入口使用的 `workflow/profiles/*.conf` | handler 或任意新 CLI 参数 |
+| 改安装集合/组件关联 | `workflow/profiles/*.conf` | handler 或任意新 CLI 参数 |
 | 换镜像 | `mirrors/current.conf` 或安装项 URL 来源 | `legacy.conf`、用户 mirror-state |
 | 改已有应用行为 | 该应用的原生配置文件 | install/apply schema |
 
@@ -82,7 +82,7 @@ install_depends_on=homebrew
 4. Unix 通常选择 hardlink/config_home；明确需要复制才用 copy。Windows 只能 copy/local_app_data。
 5. 目录中有运行时状态时加 exclude。它是 `;` 分隔的精确相对路径及子树，不是 `*.cache` 这样的 glob。文件 source 不配 exclude。
 6. 检查 source 确实存在，目标不与其他组件或仓库/备份重叠，未排除 source 不是 symlink。hardlink 需要同文件系统。
-7. 若要加入完整安装流程，修改相应已有 profile 的 `components=apply-id:install-id`，并确保 install 选择包含所需项。不要仅新增 apply 文件就宣称 workflow 会自动选择它。
+7. 若要加入完整安装流程，修改相应 `*-full` profile 的 `components=apply-id:install-id`，并确保 install 选择包含所需项。不要仅新增 apply 文件就宣称 workflow 会自动选择它。
 
 以下为现有 Fish 声明；不要将 fish_variables 加回受托管文件：
 
@@ -99,18 +99,21 @@ Windows Terminal 示例见 [windows-terminal.conf](../apply/items/windows-termin
 
 ## 修改 profile 或镜像
 
-profile 必须包含 schema_version/install/components/shell/mirrors/wsl 六个字段。不要生成空 components；只安装软件用阶段选择。`install=all` 自动包含平台所有项；显式列表只自动补依赖，不自动补任意 component 的软件。
+profile v2 必须包含 schema_version/install/components/shell/mirrors/wsl/wsl_profile 七个字段。`install=none` 表示不安装；`components=none` 表示不部署。无安装关联时写 `components=apply-id`，有依赖时写 `apply-id:install-id`。`install=all` 包含全部平台安装项；显式列表自动补依赖。默认方案保持纯配置，完整环境写入 `*-full`。
 
 ```ini
-schema_version=1
+schema_version=2
 install=all
 components=windows-terminal:windows-terminal
 shell=none
-mirrors=none
+mirrors=initialize
 wsl=FedoraLinux-44
+wsl_profile=wsl-full
 ```
 
-这是当前 Windows profile 的结构。新增另一个文件名并不创建 `--profile` 参数；若需求确实是新的可选 workflow，需要先明确入口接入方式。
+这是 `windows-full` 的结构。新方案可通过 `--profile NAME` / `-Profile NAME` 选择，名称仅含小写字母、数字和连字符且以字母开头。wsl 和 wsl_profile 必须同时启用；自定义已有 WSL2 分发必须提供对应 guest profile，checkout 必须位于该分发内。不要生成自动创建分发的命令。apply 只使用组件，不继承其余行为。
+
+新增目标根时选择已支持的根：Unix home/config_home，Windows home/app_data/local_app_data；例如 `.zshrc` 或 `.gitconfig` 使用 home，漫游设置使用 app_data。不要把整个 home 视为禁止保存报告的范围；只保护具体托管目标及现有仓库/备份路径。桌面字体 renderer 仍限定 config_home。用隔离根验证缺失变量、跨根重叠、备份和恢复。
 
 镜像配置从完整 `mirrors/current.conf` 复制后只改需要的端点，不生成“只含变化 key”的文件。不得修改 legacy 以切换当前镜像；不得生成 mirror-state 或恢复 journal。安装项 mirror_url 与持久镜像 key 各自管理，不推断不存在的自动关联。
 

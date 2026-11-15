@@ -39,11 +39,11 @@ Keep operator commands in module READMEs and configuration-generation procedures
 
 There is no build step. The shared check manifest is `tests/checks/manifest.tsv`; run `./tests/check.sh --strict` on Unix or `./tests/check.ps1 -Strict` on Windows. Suites are `core`, `cross`, `dry-run`, `lint`, and `all`; strict mode fails missing runtimes for eligible checks, while unsupported hosts are explicitly skipped. See `tests/README.md`. Installer contract tests share fixtures under `tests/fixtures/install/`: run `bash tests/install-items.sh`, `bash tests/install-handlers.sh`, `bash tests/install-entry.sh` (Linux only), `bash tests/workflow.sh`, and the corresponding PowerShell tests (`tests/install-items.ps1`, `tests/install-parity.ps1`, `tests/workflow.ps1`) when available. Schema rules live in `install/schema/`; mechanism handlers in `install/handlers/` receive explicit item/context arguments. Keep the Bash 3.2 and PowerShell 5.1 contracts aligned. Apply configuration lives in `apply/items/` and `apply/schema/`, with explicit file-operation handlers under `apply/handlers/`. Run `bash tests/apply-schema.sh`, `bash tests/apply.sh`, `bash tests/mirrors.sh`, plus `tests/apply-schema.ps1` and `tests/apply.ps1` when PowerShell is available. Keep preflight non-mutating, preserve unknown configurations and backups, and test both automatic rollback and guarded explicit recovery. Validate changes with the platform installer's non-mutating mode:
 
-- `./install/macos.sh --dry-run` checks the macOS workflow and prints planned actions.
+- `./install/macos.sh --dry-run` checks the default configuration workflow; add `--profile macos-full` to preview the complete environment.
 - `./install/linux.sh --dry-run` detects the available package manager and prompts for confirmation.
 - `./install/linux.sh --dry-run --yes` is suitable for non-interactive Linux validation.
-- `./install/linux.sh --dry-run --yes --no-china-mirrors` also validates the upstream-source plan; the default run validates the mirror rewrite plan.
-- `.\install\windows.ps1 -DryRun` validates the Windows/Fedora WSL workflow from PowerShell.
+- `./install/linux.sh --profile linux-full --dry-run --yes --no-china-mirrors` validates the complete upstream-source plan; omit `--no-china-mirrors` to validate the full mirror plan.
+- `.\install\windows.ps1 -DryRun` validates the default Windows configuration workflow; add `-Profile windows-full` for the complete Windows/WSL workflow from PowerShell.
 
 The Linux installer supports Pacman, APT, and DNF systems and selects its branch from the package manager present on the host rather than from the distribution name. When available, run `shellcheck lib/*.sh install/*.sh apply/*.sh` for Bash changes, and `bash -n` as a quick syntax check. Parse configuration with its owning tool, such as `fish -n configs/fish/config.fish`, `wezterm ls-fonts`, or `hx --health`.
 
@@ -63,12 +63,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$windows_install_path" 
 Resolve paths before starting PowerShell: `wslpath` is a Linux executable and
 is not available as a PowerShell cmdlet. Repositories stored in WSL are passed
 to Windows PowerShell as `\\wsl.localhost\<distribution>\...` UNC paths. The
-checkout for the full workflow (or any selection including the WSL stage) must live inside the `FedoraLinux-44` distribution itself, since its
+checkout for the full workflow (or any selection including the WSL stage) must live inside the distribution selected by the profile (`FedoraLinux-44` for `windows-full`), since its
 configuration is hard-linked into that WSL home; a Windows-drive or
 other-distribution checkout is rejected before any host changes are made. Use
 `-DryRun` for validation so the Windows Terminal settings and existing backups
-are not modified. A successful full installer dry run should validate the
-Windows configuration, detect the `FedoraLinux-44` WSL2 distribution, and invoke
+are not modified. The default Windows profile does not inspect WSL. A successful explicit full installer dry run should validate the
+Windows configuration, detect the selected WSL2 distribution, and invoke
 the Linux installer in its non-mutating mode.
 
 ## Coding Style & Naming Conventions

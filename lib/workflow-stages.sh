@@ -12,7 +12,7 @@ workflow_stage_plan() {
     BEGIN {n=split(ENVIRON["DOTFILES_STAGE_PROFILE"],lines,"\n");for(i=1;i<=n;i++){p=index(lines[i],"=");settings[substr(lines[i],1,p-1)]=substr(lines[i],p+1)}}
     {sub(/\r$/, "")}
     /^#/ || /^$/ {next}
-    {if(NF!=6 || $1 !~ /^(unix|windows)$/ || $2 !~ /^[0-9]+$/ || length($2)>6 || $3 !~ /^[a-z][a-z0-9-]*$/ || $4 !~ /^(always|mirrors|shell|wsl)$/ || $5 !~ /^(packages|git|configuration|mirrors|shell|wsl)$/ || $6 !~ /^(packages|git|configuration|mirrors|shell|wsl)$/) fail("invalid registry row")
+    {if(NF!=6 || $1 !~ /^(unix|windows)$/ || $2 !~ /^[0-9]+$/ || length($2)>6 || $3 !~ /^[a-z][a-z0-9-]*$/ || $4 !~ /^(always|install|components|mirrors|shell|wsl)$/ || $5 !~ /^(packages|git|configuration|mirrors|shell|wsl)$/ || $6 !~ /^(packages|git|configuration|mirrors|shell|wsl)$/) fail("invalid registry row")
       if($1=="unix" && ($5 ~ /^(git|wsl)$/ || $6 ~ /^(git|wsl)$/)) fail("unsupported Unix handler")
       if($1=="windows" && ($5 ~ /^(mirrors|shell)$/ || $6 ~ /^(mirrors|shell)$/)) fail("unsupported Windows handler")
       if(seen[$1 SUBSEP $3]++) fail("duplicate stage " $3)
@@ -28,7 +28,7 @@ workflow_stage_plan() {
         for(j=1;j<=count;j++) {id=ids[j];if(!(id in done) && (best=="" || orders[id]<orders[best] || (orders[id]==orders[best] && id<best))) best=id}
         done[best]=1;if(best==from) reached=1
         enabled=(reached && (only=="" || best==only));reason=(enabled ? "" : "selection")
-        if(enabled && gate[best]!="always" && settings[gate[best]]=="none") {enabled=0;reason="profile"}
+        if(enabled && gate[best]!="always" && gate[best]!="mirrors" && settings[gate[best]]=="none") {enabled=0;reason="profile"}
         if(enabled && gate[best]=="mirrors" && mirrors==0) {enabled=0;reason="disabled"}
         print best "|" enabled "|" reason "|" preflight[best] "|" action[best]
       }

@@ -1,7 +1,8 @@
 # field	pattern	required
-schema_version	1	yes
+schema_version	2	yes
 install	[a-z0-9][a-z0-9-]*( [a-z0-9][a-z0-9-]*)*	yes
-components	[a-z0-9][a-z0-9-]*:[a-z0-9][a-z0-9-]*( [a-z0-9][a-z0-9-]*:[a-z0-9][a-z0-9-]*)*	yes
+components	none|[a-z0-9][a-z0-9-]*(:[a-z0-9][a-z0-9-]*)?( [a-z0-9][a-z0-9-]*(:[a-z0-9][a-z0-9-]*)?)*	yes
 shell	fish|none	yes
 mirrors	initialize|none	yes
 wsl	[a-zA-Z0-9][a-zA-Z0-9._-]*	yes
+wsl_profile	[a-z][a-z0-9-]*	yes

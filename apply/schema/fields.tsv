@@ -1,6 +1,6 @@
 # field	pattern	required
 source	.+	yes
-target_root	config_home|local_app_data	yes
+target_root	home|config_home|app_data|local_app_data	yes
 target	.+	yes
 method	hardlink|copy	yes
 exclude	.+	no

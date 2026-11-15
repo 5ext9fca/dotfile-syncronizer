@@ -8,9 +8,10 @@ source "$workflow_review_library_dir/install-report.sh"
 
 workflow_request_read() {
   local rows
+  [[ "$(head -n 1 "$1/request.tsv")" == '# dotfiles|workflow-request|2' ]] || { printf 'error: incompatible session request; v2 required\n' >&2;return 2; }
   rows="$(contract_read workflow-request "$(cat "$1/request.tsv")")" || return
   printf '%s\n' "$rows" | awk -F '|' '
-    NR!=1 || $1!~/^(linux\.(apt|dnf|pacman)|macos|windows)$/ || $2!~/^[a-z][a-z0-9-]*$/ || $3!~/^[01]$/ || $6!~/^[01]$/ {bad=1}
+    NR!=1 || $1!~/^(linux\.(apt|dnf|pacman|none)|macos|windows)$/ || $2!~/^[a-z][a-z0-9-]*$/ || $3!~/^[01]$/ || $6!~/^[01]$/ {bad=1}
     {n=split($4,stages,",");for(i=1;i<=n;i++) if(stages[i]!~/^[a-z][a-z0-9-]*$/ || seen[stages[i]]++) bad=1}
     END {if(NR!=1 || bad) exit 1;print}'
 }
@@ -59,11 +60,11 @@ workflow_resume_prepare() {
   local context="$1" session request platform profile mirrors selected parent dry rows remaining stage status failed=0
   [[ -f "$context/resume_session" ]] || return 0
   session="$(workflow_context_get "$context" resume_session)";[[ -n "$session" ]] || return 0
-  [[ -z "$(workflow_context_get "$context" only_stage)" && -z "$(workflow_context_get "$context" from_stage)" && "$(cat "$context/mirrors_explicit" 2>/dev/null || printf 0)" != 1 ]] || { printf 'error: --resume cannot be combined with stage or mirror selectors\n' >&2;return 2; }
+  [[ -z "$(workflow_context_get "$context" only_stage)" && -z "$(workflow_context_get "$context" from_stage)" && "$(cat "$context/profile_explicit" 2>/dev/null)" != 1 && "$(cat "$context/mirrors_explicit" 2>/dev/null || printf 0)" != 1 ]] || { printf 'error: --resume cannot be combined with profile, stage or mirror selectors\n' >&2;return 2; }
   session="$(cd -- "$session" && pwd -P)" || return
   request="$(workflow_request_read "$session")" || { printf 'error: session has no valid resume request; use --from-stage manually\n' >&2;return 2; }
   IFS='|' read -r platform profile mirrors selected parent dry <<< "$request"
-  [[ "$platform" == "$(workflow_context_get "$context" platform)" && "$profile" == "$(workflow_context_get "$context" profile_name)" && "$dry" == 0 ]] || { printf 'error: resume requires a real session on the same platform/profile\n' >&2;return 2; }
+  [[ "$platform" == "$(workflow_context_get "$context" platform)" && "$dry" == 0 ]] || { printf 'error: resume requires a real session on the same platform/profile\n' >&2;return 2; }
   rows="$(workflow_review_rows "$session")" || return
   remaining=''
   while IFS= read -r stage;do
@@ -72,6 +73,7 @@ workflow_resume_prepare() {
     if (( failed ));then remaining="${remaining}${remaining:+,}$stage";fi
   done < <(printf '%s\n' "$selected" | tr ',' '\n')
   [[ -n "$remaining" ]] || { printf 'error: session already completed; nothing to resume\n' >&2;return 2; }
+  workflow_context_set "$context" profile_name "$profile"
   workflow_context_set "$context" china_mirrors "$mirrors"
   workflow_context_set "$context" resume_session "$session"
   workflow_context_set "$context" resume_stages "$remaining"

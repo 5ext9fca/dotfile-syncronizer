@@ -3,14 +3,14 @@ function New-WindowsWorkflowContext {
     param([hashtable]$Options)
     $Required = @('RepoRoot', 'SessionId', 'DryRun', 'PlanOnly', 'NoChinaMirrors', 'ResultsPath', 'OnlyStage', 'FromStage', 'ConfigRoot', 'BackupRoot', 'ProgramFiles', 'VsInstallerRoot', 'GitConfigPaths')
     foreach ($Key in $Required) { if (-not $Options.ContainsKey($Key)) { throw "Missing workflow context field $Key" } }
-    foreach ($Key in $Options.Keys) { if ($Key -cnotin ($Required + @('Resume','MirrorsExplicit'))) { throw "Unknown workflow context field $Key" } }
+    foreach ($Key in $Options.Keys) { if ($Key -cnotin ($Required + @('Resume','MirrorsExplicit','ProfileName','ProfileExplicit'))) { throw "Unknown workflow context field $Key" } }
     $Context = @{}
     foreach ($Key in $Required) { $Context[$Key] = $Options[$Key] }
     if ($Context.SessionId -cnotmatch '^[a-zA-Z0-9][a-zA-Z0-9._-]{0,99}$') { throw 'Invalid session ID' }
     foreach ($Key in @('DryRun', 'PlanOnly', 'NoChinaMirrors')) { if ($Context[$Key] -isnot [bool]) { throw "Invalid boolean context field $Key" } }
     $Context.Resume = $Options.Resume; $Context.MirrorsExplicit = $Options.MirrorsExplicit
-    $Context.ProfileName = 'windows'
-    $Context.ConfigRoot = Resolve-ApplyRoot $Context.ConfigRoot
+    $Context.ProfileExplicit = $Options.ProfileExplicit
+    $Context.ProfileName = if ($Options.ProfileName) { $Options.ProfileName } else { 'windows' }
     $Context.SessionPath = Join-Path (Resolve-ApplyRoot $Context.BackupRoot) "workflow-$($Context.SessionId)"
     $Context.InstallContext = @{ DryRun = [bool]$Context.DryRun; ProgramFiles = $Context.ProgramFiles; VsInstallerRoot = $Context.VsInstallerRoot }
     $Context.GitSettings = @() # Personal identity is configured locally by the operator.
@@ -18,17 +18,19 @@ function New-WindowsWorkflowContext {
 }
 function Get-WindowsWorkflowInstallPlan {
     param([hashtable]$Context)
+    if ($Context.Profile.install -ceq 'none') { return }
     $Plan = @(Get-InstallPlan -Directory (Join-Path $Context.RepoRoot 'install/items') -Inspect $false -Context $Context.InstallContext)
     $Mode = if ($Context.Resume) { 'resume' } else { 'normal' }
     Select-WorkflowInstallPlan $Context.Profile $Plan $Context.InstallContext $Mode
 }
 function Get-WindowsWorkflowApplyPlan {
     param([hashtable]$Context)
-    Get-ApplyPlan -RepoRoot $Context.RepoRoot -Items (Join-Path $Context.RepoRoot 'apply/items') -TargetRoot $Context.ConfigRoot -Session (Join-Path $Context.SessionPath 'configuration') -Components $Context.Components
+    if (-not $Context.Components.Count) { return }
+    Get-ApplyPlan -RepoRoot $Context.RepoRoot -Items (Join-Path $Context.RepoRoot 'apply/items') -Roots @{ home = $env:USERPROFILE; app_data = $env:APPDATA; local_app_data = $Context.ConfigRoot } -Session (Join-Path $Context.SessionPath 'configuration') -Components $Context.Components
 }
 function Get-WindowsWorkflowWslPlan {
     param([hashtable]$Context)
-    Get-WorkflowWslPlan -RepoRoot $Context.RepoRoot -Distribution $Context.Profile.wsl -NoChinaMirrors $Context.NoChinaMirrors -SessionId $Context.SessionId -RecordReports (-not $Context.DryRun -or [bool]$Context.ResultsPath)
+    Get-WorkflowWslPlan -RepoRoot $Context.RepoRoot -Distribution $Context.Profile.wsl -GuestProfile $Context.Profile.wsl_profile -NoChinaMirrors $Context.NoChinaMirrors -SessionId $Context.SessionId -RecordReports (-not $Context.DryRun -or [bool]$Context.ResultsPath)
 }
 function Get-WindowsWorkflowGitPath {
     param([hashtable]$Context)
@@ -38,14 +40,21 @@ function Get-WindowsWorkflowGitPath {
 function Initialize-WindowsWorkflow {
     param([hashtable]$Context)
     Initialize-WorkflowResume $Context
-    $Context.Profile = Read-WorkflowProfile (Join-Path $Context.RepoRoot 'workflow/profiles/windows.conf')
-    if ($Context.Profile.shell -cne 'none' -or $Context.Profile.mirrors -cne 'none') { throw 'Windows requires shell=none and mirrors=none; WSL owns Unix initialization.' }
+    $Context.Profile = Read-WorkflowProfile (Get-WorkflowProfilePath $Context.RepoRoot $Context.ProfileName)
+    if ($Context.Profile.shell -cne 'none') { throw 'Windows requires shell=none' }
+    if (-not $Context.MirrorsExplicit -and -not $Context.Resume) { $Context.NoChinaMirrors = $Context.Profile.mirrors -ceq 'none' }
     $Context.StagePlan = @(Get-WorkflowStagePlan windows $Context.Profile $Context.OnlyStage $Context.FromStage (-not $Context.NoChinaMirrors))
     Select-WorkflowResumeStages $Context
     $Context.InstallPlan = @(Get-WindowsWorkflowInstallPlan $Context)
     $Context.Components = @(Get-WorkflowComponents $Context.Profile $Context.InstallPlan @(Read-ApplyItems (Join-Path $Context.RepoRoot 'apply/items')))
     $Enabled = @($Context.StagePlan | Where-Object { $_.Enabled })
-    $Protected = @($Context.RepoRoot, $Context.ConfigRoot)
+    $Protected = @($Context.RepoRoot)
+    foreach ($Definition in @(Read-ApplyItems (Join-Path $Context.RepoRoot 'apply/items'))) {
+        if ($Definition.id -cnotin $Context.Components -or $Definition.target_root -ceq 'home') { continue }
+        $Value = if ($Definition.target_root -ceq 'app_data') { $env:APPDATA } else { $Context.ConfigRoot }
+        # Validation/planning resolves only roots of selected components.
+        if ($Value -and [IO.Path]::IsPathRooted($Value)) { $Protected += Resolve-ApplyRoot $Value }
+    }
     if ('git' -cin @($Enabled.Preflight)) { $Protected += $Context.GitConfigPaths }
     Assert-WorkflowOutput $Context.SessionPath $Protected
     if ($Context.ResultsPath) {
@@ -57,7 +66,12 @@ function Initialize-WindowsWorkflow {
     foreach ($Stage in $Enabled) {
         switch -CaseSensitive ($Stage.Preflight) {
             'packages' { if (-not (Get-Command winget.exe -ErrorAction SilentlyContinue)) { throw 'WinGet is required; install Microsoft App Installer first.' } }
-            'configuration' { $Context.ApplyPlan = @(Get-WindowsWorkflowApplyPlan $Context) }
+            'configuration' {
+                $Context.ApplyPlan = @(Get-WindowsWorkflowApplyPlan $Context)
+                $Targets = @($Context.ApplyPlan | ForEach-Object { $_.Target; if ($_.Source) { $_.Source } })
+                Assert-WorkflowOutput $Context.SessionPath $Targets
+                if ($Context.ResultsPath) { Assert-WorkflowOutput $Context.ResultsPath $Targets }
+            }
             'wsl' { $Context.WslPlan = Get-WindowsWorkflowWslPlan $Context }
             'git' {
                 $Git = Get-WindowsWorkflowGitPath $Context

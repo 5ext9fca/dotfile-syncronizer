@@ -20,6 +20,8 @@ function Read-WorkflowProfile {
         if ($Key -cnotin @($Schema.Keys)) { throw "Unknown profile field $Key" }
         if ($Profile.ContainsKey($Key)) { throw "Workflow profile: duplicate $Key" }
         if ($Value -cnotmatch ('^(' + $Schema[$Key].Pattern + ')$')) { throw "Invalid profile $Key" }
+        if ($Key -ceq 'install' -and $Value -cnotin @('none', 'all') -and (' ' + $Value + ' ') -cmatch ' (none|all) ') { throw 'Reserved install selector' }
+        if ($Key -ceq 'components' -and $Value -cne 'none' -and (' ' + $Value + ' ') -cmatch ' none(:[^ ]*)? ') { throw 'Reserved component selector' }
         if ($Key -ceq 'components') {
             $Seen = @{}
             foreach ($Pair in $Value.Split(' ')) {
@@ -33,6 +35,7 @@ function Read-WorkflowProfile {
     foreach ($Key in $Schema.Keys) {
         if ($Schema[$Key].Required -and -not $Profile.ContainsKey($Key)) { throw "Missing profile field $Key" }
     }
+    if (($Profile.wsl -ceq 'none') -ne ($Profile.wsl_profile -ceq 'none')) { throw 'wsl and wsl_profile must both be enabled or none' }
     $Profile
 }
 
@@ -46,6 +49,7 @@ function ConvertTo-WorkflowProfileText {
 function Select-WorkflowInstallPlan {
     param([hashtable]$Profile, [object[]]$Plan, [hashtable]$Context = @{},
         [ValidateSet('offline','normal','resume')][string]$Mode = 'offline')
+    if ($Profile.install -ceq 'none') { return }
     $Items = @{}; $Selected = @{}; $Pending = New-Object 'System.Collections.Generic.Queue[string]'
     foreach ($Item in $Plan) { $Items[$Item.id] = $Item }
     $Roots = if ($Profile.install -ceq 'all') { @($Plan | ForEach-Object { $_.id }) } else { $Profile.install.Split(' ') }
@@ -68,12 +72,21 @@ function Select-WorkflowInstallPlan {
 
 function Get-WorkflowComponents {
     param([hashtable]$Profile, [object[]]$Plan, [object[]]$ApplyItems)
+    if ($Profile.components -ceq 'none') { return }
     foreach ($Pair in $Profile.components.Split(' ')) {
         $Component, $Id = $Pair.Split(':')
-        $Item = @($Plan | Where-Object { $_.id -ceq $Id })
-        if ($Item.Count -ne 1) { throw "Component $Component requires unknown install item $Id" }
-        if ($Item[0].reason -like 'environment-not-selected:*' -or $Item[0].reason -like 'provided-by-host:*') { throw "Component $Component requires excluded install item $Id" }
+        if ($Id) {
+            $Item = @($Plan | Where-Object { $_.id -ceq $Id })
+            if ($Item.Count -ne 1) { throw "Component $Component requires unknown install item $Id" }
+            if ($Item[0].reason -like 'environment-not-selected:*' -or $Item[0].reason -like 'provided-by-host:*') { throw "Component $Component requires excluded install item $Id" }
+        }
         if (-not @($ApplyItems | Where-Object { $_.id -ceq $Component }).Count) { throw "Unknown apply component $Component" }
         $Component
     }
+}
+
+function Get-WorkflowProfilePath {
+    param([string]$RepoRoot, [string]$Name)
+    if ($Name -cnotmatch '^[a-z][a-z0-9-]*$') { throw 'Invalid profile name' }
+    Join-Path $RepoRoot "workflow/profiles/$Name.conf"
 }

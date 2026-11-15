@@ -20,7 +20,7 @@
 | --- | --- |
 | core（默认） | 当前主机的安装、apply、workflow、schema、进程、报告、续跑等契约 |
 | cross | 两端安装计划一致性及可移植 PowerShell 契约/续跑/策略/计划说明测试 |
-| dry-run | 当前 Linux/macOS 的镜像和上游两种安装预览 |
+| dry-run | 当前 Linux/macOS 的默认配置方案，以及完整方案的镜像/上游安装预览 |
 | lint | Unix ShellCheck，逐文件检查入口、库、handler 和测试 |
 | all | 当前主机适用的全部 suite |
 
@@ -74,7 +74,7 @@ DOTFILES_TEST_POWERSHELL=/path/to/pwsh ./tests/check.sh --suite cross --strict
 
 Fedora job 使用 `registry.fedoraproject.org/fedora:latest` 容器，安装测试工具后以普通用户依次执行 strict core、lint 和 dry-run，保留不可访问路径的权限测试，并覆盖真实 DNF 环境中的入口选择及镜像/上游两种预览。容器中的安装器仍只做 dry-run；这不验证实际软件安装、桌面启动或登录 shell 切换，也不代替完整 Windows/WSL 验证。
 
-完整 Windows/Fedora WSL 流程需要正确的真实 checkout 和 WSL2 guest，不属于 hosted CI 的自动端到端流程：
+显式完整 Windows/WSL 流程需要正确的真实 checkout 和 WSL2 guest，不属于 hosted CI 的自动端到端流程：
 
 ```powershell
 ./install/windows.ps1 -DryRun
@@ -89,3 +89,5 @@ Fedora job 使用 `registry.fedoraproject.org/fedora:latest` 容器，安装测�
 共享解析规则优先使用共同夹具，再分别验证两端实现。新增检查应验证可观察的行为或失败边界，不只复述实现。
 
 重复运行回归由 `install-resume.*`、`install-dependencies.*` 和 `workflow.sh` 覆盖：普通运行与续跑共享存在性检查、移除证据后重装、新声明入选、发现失败阻断、安装命令成功但不创建产物仍成功、公共/安装专用依赖区分、独立根项目保留、未选中工具不执行探测，以及无待安装项时不更新包索引或系统。
+
+`tests/profile-roots.sh` / `.ps1` 覆盖纯配置默认、none 集合、方案名称、受控目标根、跨根冲突；Unix 还验证隔离 CLI、重复部署、备份和恢复。WSL 分发和 guest profile 的隔离参数检查位于 `tests/workflow.ps1`，不能代替原生 Windows/WSL 验证。

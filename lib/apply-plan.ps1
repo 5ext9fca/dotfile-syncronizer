@@ -30,13 +30,19 @@ function Add-ApplyFile {
     $State.Plan.Add(@{ Component = $Component; Action = $Action; Source = $Source; Target = $Target; Backup = $Backup; Before = $Before; SourceState = (Get-ApplyState $Source); Root = $Root; Reason = $Reason })
 }
 function Get-ApplyPlan {
-    param([string]$RepoRoot, [string]$Items, [string]$TargetRoot, [string]$Session, [string[]]$Components = @())
+    param([string]$RepoRoot, [string]$Items, [string]$TargetRoot, [string]$Session, [string[]]$Components = @(), [hashtable]$Roots = @{})
     $Definitions = @(Read-ApplyItems $Items)
+    if ($Components.Count -eq 1 -and $Components[0] -ceq 'none') { return }
+    if (-not $Roots.Count) { $Roots = @{ home = $env:USERPROFILE; app_data = $env:APPDATA; local_app_data = $TargetRoot } }
     foreach ($Name in $Components) { if ($Name -cnotin @($Definitions | ForEach-Object { $_.id })) { throw "Unknown component: $Name" } }
     $State = @{ Session = $Session; Plan = [Collections.Generic.List[object]]::new(); Directories = @{} }
     $Targets = @()
     foreach ($Item in $Definitions) {
         if ($Components.Count -and $Item.id -cnotin $Components) { continue }
+        $Value = [string]$Roots[$Item.target_root]
+        if (-not $Value -or -not [IO.Path]::IsPathRooted($Value) -or $Value -match '^[A-Za-z]:[^\\/]') { throw "Missing or non-absolute target root: $($Item.target_root)" }
+        if ([Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT -and $Value -notmatch '^(?:[A-Za-z]:[\\/]|[\\/]{2}[^\\/]+[\\/][^\\/]+)') { throw 'Target root must be absolute' }
+        $TargetRoot = Resolve-ApplyRoot $Value
         $Source = [IO.Path]::GetFullPath((Join-Path $RepoRoot $Item.source))
         $Target = [IO.Path]::GetFullPath((Join-Path $TargetRoot $Item.target))
         if ((Test-ApplyWithin $Target $RepoRoot) -or (Test-ApplyWithin $RepoRoot $Target) -or (Test-ApplyWithin $Session $Target) -or (Test-ApplyWithin $Target $Session)) { throw 'Source, target or backup paths overlap' }

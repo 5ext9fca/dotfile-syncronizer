@@ -49,6 +49,17 @@ workflow_context_set "$context" only_stage ''
 workflow_context_set "$context" mirrors_explicit 1
 if workflow_resume_prepare "$context" >/dev/null 2>&1;then exit 1;fi
 workflow_context_set "$context" mirrors_explicit 0
+workflow_context_set "$context" profile_explicit 1
+if workflow_resume_prepare "$context" >/dev/null 2>&1;then exit 1;fi
+workflow_context_set "$context" profile_explicit 0
+contract_save workflow-request 'linux.apt|custom-profile|0|configuration||0' "$session/request.tsv"
+workflow_resume_prepare "$context"
+[[ "$(workflow_context_get "$context" profile_name)" == custom-profile ]]
+sed 's/workflow-request|2/workflow-request|1/' "$session/request.tsv" > "$test_tmp/v1"
+cp "$test_tmp/v1" "$session/request.tsv"
+if workflow_resume_prepare "$context" > "$test_tmp/incompatible" 2>&1;then exit 1;fi
+grep -q 'incompatible session' "$test_tmp/incompatible"
+contract_save workflow-request 'linux.apt|linux|0|configuration||0' "$session/request.tsv"
 # Sidecar wins over a stale failed summary. Completed sessions cannot be resumed.
 stage_result_finish "$session/configuration.result" 0 0 ''
 if workflow_resume_prepare "$context" >/dev/null 2>&1;then exit 1;fi

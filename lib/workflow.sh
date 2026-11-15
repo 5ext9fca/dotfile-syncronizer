@@ -43,19 +43,23 @@ workflow_assert_report_location() {
   local context="$1" path="$2" protected parent
   apply_safe_path "$path"
   [[ ! -e "$path" && ! -L "$path" ]] || { printf 'error: workflow output already exists: %s\n' "$path" >&2;return 1; }
-  for protected in "$(workflow_context_get "$context" repo_root)" "$(workflow_context_get "$context" config_home)"; do
+  local protected_roots
+  protected_roots="$(workflow_context_get "$context" repo_root)"
+  if [[ -s "$context/protected_roots" ]];then protected_roots="$protected_roots"$'\n'"$(cat "$context/protected_roots")";fi
+  while IFS= read -r protected; do
     if [[ "$path" == "$protected" || "$path" == "$protected/"* || "$protected" == "$path/"* ]];then printf 'error: workflow output overlaps repository or configuration: %s\n' "$path" >&2;return 1;fi
-  done
+  done <<< "$protected_roots"
   parent="$(apply_nearest_directory "$(dirname -- "$path")")"
   [[ -w "$parent" ]] || { printf 'error: workflow output parent is not writable: %s\n' "$parent" >&2;return 1; }
 }
 workflow_validate_plan_outputs() {
   local context="$1" plan="$2" component action source target rest output protected
   while IFS='|' read -r component action source target rest; do
-    [[ -n "$component" && -n "$source" ]] || continue
+    [[ -n "$component" ]] || continue
     for output in "$(workflow_context_get "$context" session_path)" "$(workflow_context_get "$context" results_path)"; do
       [[ -n "$output" ]] || continue
       for protected in "$source" "$target"; do
+        [[ -n "$protected" ]] || continue
         if [[ "$output" == "$protected" || "$output" == "$protected/"* || "$protected" == "$output/"* ]];then printf 'error: workflow output overlaps a planned file: %s\n' "$output" >&2;return 1;fi
       done
     done
@@ -63,6 +67,7 @@ workflow_validate_plan_outputs() {
 }
 workflow_refresh_install_plan() {
   local context="$1" plan mode=normal
+  [[ "$(workflow_profile_value "$(cat "$context/profile")" install)" != none ]] || return 0
   plan="$(install_items_plan "$(workflow_context_get "$context" repo_root)/install/items" "$(workflow_context_get "$context" platform)" "$(workflow_context_get "$context" china_mirrors)" "$(workflow_context_get "$context" inside_wsl)" 0 "$(cat "$context/install.context")")" || return
   [[ ! -s "$context/resume_stages" ]] || mode=resume
   workflow_profile_install_plan "$(cat "$context/profile")" "$plan" "$(cat "$context/install.context")" "$mode"
@@ -78,11 +83,17 @@ workflow_preflight() {
     [[ "$value" == 0 || "$value" == 1 ]] || { printf 'error: invalid boolean context: %s\n' "$key" >&2;return 2; }
   done
   workflow_resume_prepare "$context"
-  workflow_read_profile "$repo/workflow/profiles/$profile_name.conf" > "$context/profile"
+  profile_name="$(workflow_context_get "$context" profile_name)"
+  workflow_read_profile "$(workflow_profile_path "$repo" "$profile_name")" > "$context/profile"
+  if [[ "$(cat "$context/mirrors_explicit" 2>/dev/null || printf 0)" != 1 && ! -s "$context/resume_stages" ]];then
+    value=0
+    [[ "$(workflow_profile_value "$(cat "$context/profile")" mirrors)" != initialize ]] || value=1
+    workflow_context_set "$context" china_mirrors "$value"
+  fi
   [[ "$(workflow_profile_value "$(cat "$context/profile")" wsl)" == none ]] || { printf 'error: Unix profiles require wsl=none\n' >&2;return 1; }
   workflow_stage_plan unix "$(cat "$context/profile")" "$(workflow_context_get "$context" only_stage)" "$(workflow_context_get "$context" from_stage)" "$(workflow_context_get "$context" china_mirrors)" > "$context/stages.plan"
   workflow_resume_filter "$context"
-  config_home="$(apply_resolve_root "$(workflow_context_get "$context" config_home)")"
+  config_home="$(workflow_context_get "$context" config_home)"
   backup_root="$(apply_resolve_root "$(workflow_context_get "$context" backup_root)")"
   session="$backup_root/workflow-$session_id"
   workflow_context_set "$context" config_home "$config_home"
@@ -90,9 +101,14 @@ workflow_preflight() {
   install_context_make "$platform" "$(workflow_context_get "$context" dry_run)" "$(workflow_context_get "$context" brew_cmd)" "$(workflow_context_get "$context" brew_prefix)" "$session/packages-backups" '' "$(workflow_context_get "$context" distro_id)" "$(workflow_context_get "$context" distro_codename)" > "$context/install.context"
   workflow_refresh_install_plan "$context" > "$context/install.plan"
   workflow_profile_components "$(cat "$context/profile")" "$(cat "$context/install.plan")" > "$context/components"
+  : > "$context/protected_roots"
   definitions="$(apply_read_items "$repo/apply/items" unix)"
   while IFS= read -r component;do
     printf '%s\n' "$definitions" | awk -F '|' -v id="$component" '$1==id {found=1} END {exit !found}' || { printf 'error: unknown apply component: %s\n' "$component" >&2;return 1; }
+    if printf '%s\n' "$definitions" | awk -F '|' -v id="$component" '$1==id && $3=="config_home" {found=1} END {exit !found}';then
+      [[ "$config_home" == /* ]] || { printf 'error: config_home must be absolute\n' >&2;return 1; }
+      apply_resolve_root "$config_home" >> "$context/protected_roots"
+    fi
   done < "$context/components"
   workflow_assert_report_location "$context" "$session"
   results_path="$(workflow_context_get "$context" results_path)"

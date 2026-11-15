@@ -17,10 +17,10 @@ apply-schema-windows	core	windows	powershell	tests/apply-schema.ps1	-
 apply-windows	core	windows	powershell	tests/apply.ps1	-
 workflow-schema-portable	cross	linux macos	powershell	tests/workflow-schema.ps1	-
 install-parity	cross	linux macos windows	powershell	tests/install-parity.ps1	-
-linux-mirrors	dry-run	linux	bash	install/linux.sh	--dry-run --yes
-linux-upstream	dry-run	linux	bash	install/linux.sh	--dry-run --yes --no-china-mirrors
-macos-mirrors	dry-run	macos	bash	install/macos.sh	--dry-run
-macos-upstream	dry-run	macos	bash	install/macos.sh	--dry-run --no-china-mirrors
+linux-default	dry-run	linux	bash	install/linux.sh	--dry-run --yes
+linux-upstream	dry-run	linux	bash	install/linux.sh	--profile linux-full --dry-run --yes --no-china-mirrors
+macos-default	dry-run	macos	bash	install/macos.sh	--dry-run
+macos-upstream	dry-run	macos	bash	install/macos.sh	--profile macos-full --dry-run --no-china-mirrors
 shell-lint	lint	linux macos	bash	tests/checks/lint.sh	-
 apply-contract-unix	core	linux macos	bash	tests/apply-contract.sh	-
 apply-contract-windows	core	windows	powershell	tests/apply-contract.ps1	-
@@ -73,3 +73,8 @@ install-report-portable	cross	linux macos	powershell	tests/install-report.ps1	-
 fonts-linux	core	linux	bash	tests/fonts.sh	-
 desktop-font-renderer	core	linux macos	python	tests/desktop-fonts.py	-
 font-download-unix	core	linux macos	bash	tests/font-download.sh	-
+profile-roots-unix	core	linux macos	bash	tests/profile-roots.sh	-
+profile-roots-windows	core	windows	powershell	tests/profile-roots.ps1	-
+profile-roots-portable	cross	linux macos	powershell	tests/profile-roots.ps1	-
+linux-full-mirrors	dry-run	linux	bash	install/linux.sh	--profile linux-full --dry-run --yes
+macos-full-mirrors	dry-run	macos	bash	install/macos.sh	--profile macos-full --dry-run

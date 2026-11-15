@@ -7,7 +7,7 @@ workflow_context_new() {
   directory="$(mktemp -d)" || return
   while (( $# )); do
     key="$1";value="$2";shift 2
-    case "$key" in distro_id|distro_codename|resume_session|mirrors_explicit|repo_root|platform|profile_name|dry_run|plan_only|results_path|only_stage|from_stage|session_id|config_home|backup_root|brew_cmd|brew_prefix|assume_yes|user|china_mirrors|inside_wsl|mirror_config) ;;
+    case "$key" in profile_explicit|distro_id|distro_codename|resume_session|mirrors_explicit|repo_root|platform|profile_name|dry_run|plan_only|results_path|only_stage|from_stage|session_id|config_home|backup_root|brew_cmd|brew_prefix|assume_yes|user|china_mirrors|inside_wsl|mirror_config) ;;
       *) printf 'error: unknown context field: %s\n' "$key" >&2;rm -rf "$directory";return 2 ;;
     esac
     if [[ "$seen" == *" $key "* || "$value" == *$'\n'* || "$value" == *$'\r'* ]]; then

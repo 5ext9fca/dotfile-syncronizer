@@ -2,10 +2,11 @@
 . (Join-Path $PSScriptRoot 'stage-result.ps1')
 function Read-WorkflowRequest {
     param([string]$Session)
+    if ((Get-Content -LiteralPath (Join-Path $Session 'request.tsv') -TotalCount 1) -cne '# dotfiles|workflow-request|2') { throw 'Incompatible session request; v2 required' }
     $Rows = @(Read-DataContract workflow-request ([IO.File]::ReadAllText((Join-Path $Session 'request.tsv'))))
     if ($Rows.Count -ne 1) { throw 'Expected one workflow request' }
     $Row = $Rows[0]
-    if ($Row.platform -cnotmatch '^(linux\.(apt|dnf|pacman)|macos|windows)$' -or $Row.profile -cnotmatch '^[a-z][a-z0-9-]*$' -or $Row.china_mirrors -notmatch '^[01]$' -or $Row.dry_run -notmatch '^[01]$') { throw 'Invalid workflow request' }
+    if ($Row.platform -cnotmatch '^(linux\.(apt|dnf|pacman|none)|macos|windows)$' -or $Row.profile -cnotmatch '^[a-z][a-z0-9-]*$' -or $Row.china_mirrors -notmatch '^[01]$' -or $Row.dry_run -notmatch '^[01]$') { throw 'Invalid workflow request' }
     $Seen = @{}
     foreach ($Stage in $Row.selected_stages.Split(',')) {
         if ($Stage -cnotmatch '^[a-z][a-z0-9-]*$' -or $Seen.ContainsKey($Stage)) { throw 'Invalid selected stages' }
@@ -50,10 +51,10 @@ function Save-WorkflowRequest {
 function Initialize-WorkflowResume {
     param([hashtable]$Context)
     if (-not $Context.Resume) { return }
-    if ($Context.OnlyStage -or $Context.FromStage -or $Context.MirrorsExplicit) { throw '-Resume cannot be combined with stage or mirror selectors' }
+    if ($Context.OnlyStage -or $Context.FromStage -or $Context.MirrorsExplicit -or $Context.ProfileExplicit) { throw '-Resume cannot be combined with profile, stage or mirror selectors' }
     $Context.Resume = (Resolve-Path -LiteralPath $Context.Resume).ProviderPath
     $Request = Read-WorkflowRequest $Context.Resume
-    if ($Request.platform -cne 'windows' -or $Request.profile -cne $Context.ProfileName -or $Request.dry_run -ne '0') { throw 'Resume requires a real session on the same platform/profile' }
+    if ($Request.platform -cne 'windows' -or $Request.dry_run -ne '0') { throw 'Resume requires a real session on the same platform/profile' }
     $Rows = @(Read-WorkflowReview $Context.Resume)
     $Remaining = @(); $Failed = $false
     foreach ($Stage in $Request.selected_stages.Split(',')) {
@@ -62,6 +63,7 @@ function Initialize-WorkflowResume {
         if ($Failed) { $Remaining += $Stage }
     }
     if (-not $Remaining.Count) { throw 'Session already completed; nothing to resume' }
+    $Context.ProfileName = $Request.profile
     $Context.NoChinaMirrors = $Request.china_mirrors -eq '0'
     $Context.ResumeStages = $Remaining
 }

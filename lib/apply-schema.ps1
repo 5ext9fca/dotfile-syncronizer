@@ -42,9 +42,9 @@ function Read-ApplyItems {
             }
             if (-not (Test-ApplyRelativePath $Item.source) -or -not (Test-ApplyRelativePath $Item.target)) { throw 'Source and target must be safe relative paths' }
             if ($Item.exclude) { foreach ($Exclusion in $Item.exclude.Split(';')) { if (-not (Test-ApplyRelativePath $Exclusion)) { throw 'Invalid exclusion' } } }
-            if ($Name -eq 'unix' -and $Item.target_root -cne 'config_home') { throw 'Unix requires config_home' }
-            if ($Name -eq 'windows' -and ($Item.target_root -cne 'local_app_data' -or $Item.method -cne 'copy')) { throw 'Windows requires local_app_data and copy' }
-            if ($Item.renderer -and ($Name -cne 'unix' -or $Item.condition -cne 'linux-kde' -or $Item.method -cne 'hardlink')) { throw 'desktop-fonts requires Unix linux-kde hardlink' }
+            if ($Name -eq 'unix' -and $Item.target_root -cnotin @('home', 'config_home')) { throw 'Unix requires home or config_home' }
+            if ($Name -eq 'windows' -and ($Item.target_root -cnotin @('home', 'app_data', 'local_app_data') -or $Item.method -cne 'copy')) { throw 'Windows requires home, app_data or local_app_data and copy' }
+            if ($Item.renderer -and ($Name -cne 'unix' -or $Item.target_root -cne 'config_home' -or $Item.condition -cne 'linux-kde' -or $Item.method -cne 'hardlink')) { throw 'desktop-fonts requires Unix config_home linux-kde hardlink' }
             if ($Name -ceq 'windows' -and $Item.condition) { throw 'Conditions are Unix-only' }
             if ($Name -ceq $Platform) { $Item.id = $File.BaseName; $Output[$Item.id] = $Item }
         }

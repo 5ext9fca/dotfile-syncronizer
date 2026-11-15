@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | prepare | installer packages 阶段 | 为当前安装进程导出下载环境；不在此阶段统一重写系统包源 |
 | initialize | installer mirrors 阶段，或 `apply/mirrors.sh --initialize` | 填充未配置项；已有用户设置按适配器规则保护；可识别官方系统源可转换为当前镜像 |
-| apply | 独立 apply 默认行为，或 `apply/mirrors.sh` | 将已识别的旧受管理端点更新到 current，保留未知用户设置 |
+| apply | 独立 apply 显式 `--china-mirrors`，或 `apply/mirrors.sh` | 将已识别的旧受管理端点更新到 current，保留未知用户设置 |
 
 `--no-china-mirrors` / `-NoChinaMirrors` 跳过安装镜像流程；`apply/apply.sh --no-mirrors` 跳过独立 apply 的镜像。二者都不会删除或撤销已有设置。
 

@@ -33,7 +33,7 @@ function Get-WorkflowGitConfigPaths {
 }
 
 function Get-WorkflowWslPlan {
-    param([string]$RepoRoot, [string]$Distribution, [bool]$NoChinaMirrors, [string]$SessionId, [bool]$RecordReports = $false)
+    param([string]$RepoRoot, [string]$Distribution, [bool]$NoChinaMirrors, [string]$SessionId, [bool]$RecordReports = $false, [string]$GuestProfile = 'wsl-full')
     if (-not (Get-Command wsl.exe -ErrorAction SilentlyContinue)) { throw 'WSL is required; initialize the declared WSL2 distribution first.' }
     $Prefix = "\\wsl.localhost\$Distribution\"
     $LegacyPrefix = "\\wsl`$\$Distribution\"
@@ -46,11 +46,10 @@ function Get-WorkflowWslPlan {
     $Version = @($Rows | ForEach-Object { ($_ -replace "`0", '').Trim() } | Where-Object { $_ -match "^\*?\s*$([Regex]::Escape($Distribution))\s+.*\s+2$" })
     if (-not $Version.Count) { throw "WSL distribution '$Distribution' must exist and use WSL2." }
     # Pass paths as arguments, never interpolate them into shell source text.
-    Invoke-InstallProbe wsl.exe @('-d', $Distribution, '--', 'test', '-f', '/etc/fedora-release') | Out-Null
     $Installer = "$LinuxRoot/install/linux.sh"
     Invoke-InstallProbe wsl.exe @('-d', $Distribution, '--', 'test', '-f', $Installer) | Out-Null
-    $Arguments = @('-d', $Distribution, '--', 'bash', $Installer, '--yes', '--session-id', $SessionId)
-    if ($NoChinaMirrors) { $Arguments += '--no-china-mirrors' }
+    $Arguments = @('-d', $Distribution, '--', 'bash', $Installer, '--yes', '--profile', $GuestProfile, '--session-id', $SessionId)
+    if ($NoChinaMirrors) { $Arguments += '--no-china-mirrors' } else { $Arguments += '--china-mirrors' }
     $HostReport = ''
     if ($RecordReports) {
         $LinuxHome = @(Invoke-InstallProbe wsl.exe @('-d', $Distribution, '--', 'printenv', 'HOME'))

@@ -12,9 +12,9 @@ function emit( k,n,i,parts) {
     if(value[k]!="" && value[k] !~ ("^(" pattern[k] ")$")) fail("invalid " k)
   }
   if(!relative(value["source"]) || !relative(value["target"])) fail("source and target must be relative paths without dot segments")
-  if(section=="unix" && value["target_root"]!="config_home") fail("Unix requires config_home")
-  if(section=="windows" && (value["target_root"]!="local_app_data" || value["method"]!="copy")) fail("Windows requires local_app_data and copy")
-  if(value["renderer"]!="" && (section!="unix" || value["condition"]!="linux-kde" || value["method"]!="hardlink")) fail("desktop-fonts requires Unix linux-kde hardlink")
+  if(section=="unix" && value["target_root"]!="config_home" && value["target_root"]!="home") fail("Unix requires home or config_home")
+  if(section=="windows" && (value["target_root"] !~ /^(home|app_data|local_app_data)$/ || value["method"]!="copy")) fail("Windows requires home, app_data or local_app_data and copy")
+  if(value["renderer"]!="" && (section!="unix" || value["target_root"]!="config_home" || value["condition"]!="linux-kde" || value["method"]!="hardlink")) fail("desktop-fonts requires Unix config_home linux-kde hardlink")
   if(section=="windows" && value["condition"]!="") fail("conditions are Unix-only")
   n=split(value["exclude"],parts,";")
   for(i=1;i<=n;i++) if(!relative(parts[i])) fail("invalid exclusion")

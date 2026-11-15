@@ -18,6 +18,8 @@ workflow_read_profile() {
       if(!(key in patterns)) fail("unknown field " key)
       if(key in values) fail("duplicate " key)
       if(value !~ ("^(" patterns[key] ")$")) fail("invalid " key)
+      if(key=="install" && value!="none" && value!="all" && (" " value " ") ~ / (none|all) /) fail("reserved install selector")
+      if(key=="components" && value!="none" && (" " value " ") ~ / none(:[^ ]*)? /) fail("reserved component selector")
       if(key=="components") {
         n=split(value,pairs," ")
         for(i=1;i<=n;i++) {
@@ -30,6 +32,7 @@ workflow_read_profile() {
     END {
       if(bad) exit 1
       for(i=1;i<=count;i++) if(required[fields[i]]=="yes" && !(fields[i] in values)) fail("missing " fields[i])
+      if((values["wsl"]=="none") != (values["wsl_profile"]=="none")) fail("wsl and wsl_profile must both be enabled or none")
       for(i=1;i<=count;i++) if(fields[i] in values) print fields[i] "=" values[fields[i]]
     }
   ' "$workflow_profile_library_dir/../workflow/schema/profile-fields.tsv" "$path"
@@ -43,7 +46,9 @@ workflow_profile_components() {
   local profile="$1" plan="$2" pair component item record found action reason
   local associations
   associations="$(workflow_profile_value "$profile" components)"
+  [[ "$associations" != none ]] || return 0
   for pair in $associations; do
+    if [[ "$pair" != *:* ]];then printf '%s\n' "$pair";continue;fi
     component="${pair%%:*}"; item="${pair#*:}"; found=0
     while IFS= read -r record; do
       [[ "${record%%|*}" == "$item" ]] || continue
@@ -68,6 +73,7 @@ workflow_profile_install_plan() (
   case "$mode" in offline|normal|resume) ;; *) printf 'error: invalid selection mode\n' >&2;return 1 ;; esac
   selection="$(workflow_profile_value "$profile" install)"
   if [[ "$selection" == all ]];then selection="$(printf '%s\n' "$plan" | cut -d '|' -f1 | tr '\n' ' ')";fi
+  [[ "$selection" != none ]] || return 0
   pending="$selection"
   while [[ -n "$pending" ]];do
     id="${pending%% *}";if [[ "$pending" == *' '* ]];then pending="${pending#* }";else pending='';fi
@@ -97,3 +103,8 @@ workflow_profile_install_plan() (
     done
   done <<< "$plan"
 )
+
+workflow_profile_path() {
+  [[ "$2" =~ ^[a-z][a-z0-9-]*$ ]] || { printf 'error: invalid profile name\n' >&2;return 2; }
+  printf '%s/workflow/profiles/%s.conf\n' "$1" "$2"
+}

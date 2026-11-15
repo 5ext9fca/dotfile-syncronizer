@@ -39,7 +39,7 @@ Zellij pane 中拖拽选择后通过 OSC 52 复制；这是 Zellij 的选区，�
 
 Unix 的 `configs/git/config` 部署到 XDG Git 配置目录。脱敏版本不携带 Git 姓名或邮箱；Windows workflow 的 git 阶段默认没有身份设置项。请在各主机使用 `git config --global user.name` 和 `git config --global user.email` 配置自己的身份。
 
-Windows Terminal 源文件使用 JSONC，配置 PowerShell 7 为默认 profile，并列出 FedoraLinux-44。列出某个分发并不表示 installer 会创建或配置它。当前字体为 JetBrainsMono Nerd Font，主题 Tokyo Night，启动最大化。
+Windows Terminal 源文件使用 JSONC，配置 PowerShell 7 为默认 profile，使用 Windows Terminal 内建 WSL 自动发现，不固定列出 Fedora。分发是否参与安装由 workflow profile 决定。当前字体为 JetBrainsMono Nerd Font，主题 Tokyo Night，启动最大化。
 
 PowerShell profile 中的 `POWERSHELL_UPDATECHECK=Off` 是仓库保留的启动通知兼容设置，维护时根据目标版本判断，不在文档中宣称它已失效。Terminal 更新采用整份文件复制；需保留个人改动时先审查源文件与备份。
 

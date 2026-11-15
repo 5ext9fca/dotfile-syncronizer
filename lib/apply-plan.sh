@@ -77,6 +77,7 @@ apply_read_items() {
 }
 
 apply_make_plan() (
+  local roots="${8:-}" root_value
   local render_scratch="${6:-}" preview="${7:-0}" condition renderer
   local repo="$1" items="$2" config="$3" session="$4" selection="$5" scratch definitions component source _target_root target method exclusions source_path target_path root entries entry relative other directories plan
   scratch="$(mktemp -d)" || return
@@ -84,6 +85,8 @@ apply_make_plan() (
   plan="$scratch/plan";directories="$scratch/directories"
   : > "$plan";: > "$directories";: > "$scratch/targets"
   definitions="$(apply_read_items "$items" unix)" || return
+  [[ "$selection" != none ]] || return 0
+  if [[ -z "$roots" ]];then roots="$(printf 'config_home|%s\nhome|%s\n' "$config" "${HOME:-}")";fi
   if [[ -n "$selection" ]];then
     while IFS= read -r component;do
       [[ -n "$component" ]] || continue
@@ -93,6 +96,9 @@ apply_make_plan() (
   while IFS='|' read -r component source _target_root target method exclusions condition renderer;do
     [[ -n "$component" ]] || continue
     if [[ -n "$selection" ]] && ! printf '%s\n' "$selection" | grep -Fxq "$component";then continue;fi
+    root_value="$(printf '%s\n' "$roots" | awk -F '|' -v key="$_target_root" '$1==key {print substr($0,length(key)+2)}')"
+    [[ "$root_value" == /* ]] || { printf 'error: missing or non-absolute target root: %s\n' "$_target_root" >&2;return 1; }
+    config="$(apply_resolve_root "$root_value")" || return
     if [[ "$condition" == linux-kde ]] && ! desktop_fonts_supported;then
       printf '%s|skip||%s||||%s|none|requires-native-linux-kde|1\n' "$component" "$config/$target" "$config" >> "$plan"
       continue

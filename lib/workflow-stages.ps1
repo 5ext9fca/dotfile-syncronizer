@@ -7,7 +7,7 @@ function Read-WorkflowStages {
         $Parts = $Line.Split("`t")
         if ($Parts.Count -ne 6) { throw 'Invalid stage registry row' }
         $HostName, $Order, $Id, $Gate, $Preflight, $Action = $Parts
-        if ($HostName -cnotin @('unix', 'windows') -or $Order -cnotmatch '^[0-9]+$' -or $Order.Length -gt 6 -or $Id -cnotmatch '^[a-z][a-z0-9-]*$' -or $Gate -cnotin @('always', 'mirrors', 'shell', 'wsl')) { throw 'Invalid stage registry fields' }
+        if ($HostName -cnotin @('unix', 'windows') -or $Order -cnotmatch '^[0-9]+$' -or $Order.Length -gt 6 -or $Id -cnotmatch '^[a-z][a-z0-9-]*$' -or $Gate -cnotin @('always', 'install', 'components', 'mirrors', 'shell', 'wsl')) { throw 'Invalid stage registry fields' }
         foreach ($Handler in @($Preflight, $Action)) {
             if ($Handler -cnotin @('packages', 'git', 'configuration', 'mirrors', 'shell', 'wsl')) { throw 'Invalid stage handler' }
         }
@@ -42,7 +42,7 @@ function Get-WorkflowStagePlan {
         if ($Record.Id -ceq $FromStage) { $Reached = $true }
         $Enabled = $Reached -and (-not $OnlyStage -or $OnlyStage -ceq $Record.Id)
         $Reason = if ($Enabled) { '' } else { 'selection' }
-        if ($Enabled -and $Record.Gate -cne 'always' -and $Profile[$Record.Gate] -ceq 'none') { $Enabled = $false; $Reason = 'profile' }
+        if ($Enabled -and $Record.Gate -cnotin @('always', 'mirrors') -and $Profile[$Record.Gate] -ceq 'none') { $Enabled = $false; $Reason = 'profile' }
         if ($Enabled -and $Record.Gate -ceq 'mirrors' -and -not $Mirrors) { $Enabled = $false; $Reason = 'disabled' }
         [pscustomobject]@{ Id = $Record.Id; Enabled = $Enabled; Reason = $Reason; Preflight = $Record.Preflight; Action = $Record.Action }
     }

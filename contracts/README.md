@@ -28,7 +28,7 @@ docker|skipped|0|discovered-installation|cask|manual|["/Applications/Docker.app"
 | workflow-request | 保存阶段选择、镜像模式和父会话，供人工续跑 |
 | workflow-summary | Unix 摘要读取的规范列定义 |
 
-install-plan 当前版本为 7：包含归一化的环境、方式与 `probe_command`，包含字体文件列表 `font_files` 和下载校验 family `font_family`，以及安装专用依赖 `install_depends_on`、`detected_method`、`detected_paths`、`decision_reason`；不再包含旧声明字段 `scope`、`check`。install-result 当前版本为 2；其他契约版本仍为 1，以 schema 为准。内部 install 计划行带 `schema_version=7`，apply 计划行带 `schema_version=1`，执行器在 dispatch 前拒绝不支持的版本。不接受旧的无封套 plan/detail report，也没有持久计划重放接口。
+install-plan 当前版本为 7：包含归一化的环境、方式与 `probe_command`，包含字体文件列表 `font_files` 和下载校验 family `font_family`，以及安装专用依赖 `install_depends_on`、`detected_method`、`detected_paths`、`decision_reason`；不再包含旧声明字段 `scope`、`check`。install-result 和 workflow-request 当前版本为 2；其他契约版本仍为 1，以 schema 为准。内部 install 计划行带 `schema_version=7`，apply 计划行带 `schema_version=1`，执行器在 dispatch 前拒绝不支持的版本。不接受旧的无封套 plan/detail report，也没有持久计划重放接口。
 
 `lib/install-report.*` 为状态查询提供显式 install-result v1 只读兼容适配，按历史 schema 校验后补空的新字段。它不推测历史证据，不改写历史文件，不让通用契约读取器或执行器接受旧计划。未知版本和坏列仍拒绝。
 

@@ -4,15 +4,15 @@ workflow 将安装项与配置组件关联起来，先完成所选阶段的预�
 
 ## 阶段选择
 
-| 平台 | 默认阶段顺序 |
+| 平台 | 注册阶段顺序 |
 | --- | --- |
 | Unix | packages → configuration → mirrors → shell |
 | Windows | packages → git → configuration → wsl |
 
-阶段由 [stages.tsv](schema/stages.tsv) 定义，profile 和镜像开关决定 gate。shell=none、mirrors=none、wsl=none 会关闭对应阶段。Windows 的 Linux 配置在 guest 的独立 workflow 中完成。
+阶段由 [stages.tsv](schema/stages.tsv) 定义，profile 和镜像开关决定 gate。`install=none` 关闭 packages 和 Windows git 阶段，`components=none` 关闭配置阶段；`shell=none`、`wsl=none` 关闭对应阶段。镜像策略取自 profile，并允许 CLI 覆盖。默认方案仅开启配置，完整环境需显式选择 `*-full`。Windows 的 Linux 配置在 guest 的独立 workflow 中完成。
 
 ```bash
-./install/linux.sh --only-stage packages --yes
+./install/linux.sh --profile linux-full --only-stage packages --yes
 ./install/linux.sh --only-stage configuration --dry-run --yes
 ./install/linux.sh --from-stage configuration --yes
 ```
@@ -32,7 +32,7 @@ plan/dry-run 都会预检；plan 输出包含选择原因、依赖、实际来�
 
 | 产物 | 用途 |
 | --- | --- |
-| `request.tsv` | 版本化 platform、profile、镜像开关、有效阶段选择、父会话路径、dry-run 标志 |
+| `request.tsv` | v2 请求，记录 platform、profile、镜像开关、有效阶段选择、父会话路径、dry-run 标志 |
 | `workflow.tsv` / `workflow.json` | Unix / Windows 阶段摘要，包含状态、退出码、耗时和产物路径 |
 | `<stage>.log` | 阶段输出 |
 | `<stage>.result` | 结构化状态和独立的 journal/child-report 路径，优先于可能落后的摘要 |
@@ -81,12 +81,12 @@ bash workflow/status.sh /path/to/workflow-session
 ./install/windows.ps1 -Resume 'C:\path\to\workflow-session'
 ```
 
-续跑从旧选择中第一个未完成阶段开始，只保留原选择剩余阶段和镜像模式；当前 profile 的 gate 仍生效。新会话记录父会话路径，重新读取当前声明、安装状态和配置目标。未在旧摘要中出现的所选阶段视为未开始。
+续跑从旧选择中第一个未完成阶段开始，只保留原选择剩余阶段和镜像模式，并自动读取原 profile 名称；当前 profile 的 gate 仍生效。新会话记录父会话路径，重新读取当前声明、安装状态和配置目标。未在旧摘要中出现的所选阶段视为未开始。
 
 限制：
 
-- 不允许同时传 only/from 或镜像开关；results 和 session ID 是新运行的参数。
-- 拒绝已完成会话、dry-run 来源、平台/profile 不符或无效记录。
+- 不允许同时传 profile、only/from 或镜像开关；results 和 session ID 是新运行的参数。
+- 拒绝已完成会话、dry-run 来源、平台不符、v1 请求或无效记录。
 - 旧会话缺少 request 时，用 `--from-stage` / `-FromStage` 或 only-stage 手动重试。
 - dry-run 失败的状态提示会要求保留原阶段和镜像选项重新 dry-run，不给出无效的 resume 命令。
 - Windows 恢复到 wsl 阶段时重新运行 guest workflow，不自动跟随 guest 的旧检查点。
@@ -109,3 +109,5 @@ Unix 使用 `uname -n` 获取锁记录中的主机名，不依赖额外的 `host
 安装项明细中的 `skipped` 配合 `already-installed` / `discovered-installation`（续跑为 `resume-already-installed`）表示安装前发现已有项；环境或 provider 排除会使用各自的原因。`success` 表示安装命令的退出码被执行策略接受，不表示安装后存在性确认；`failed` / `blocked` 分别表示失败和因前序失败未执行。安装成功后不再调用发现检查，也不检查服务运行。
 
 普通重跑使用当前平台、环境、profile 和声明重新规划；`--resume` 保留旧会话的阶段选择语义，不重新执行已完成阶段。缺失的安装项会按当前发现结果安装；新增声明在普通重跑时进入当前 profile 的选择范围。
+
+v1 会话不能续跑；已有备份、恢复 journal 和报告不删除，可继续按各自契约检查和恢复。

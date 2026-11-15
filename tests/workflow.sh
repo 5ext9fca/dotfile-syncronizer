@@ -26,7 +26,7 @@ if workflow_profile_install_plan 'install=missing' "$plan" >/dev/null 2>&1; then
 # Reject values as data rather than executing or silently ignoring them.
 # shellcheck disable=SC2016
 for invalid in 'unknown=value' 'shell=bash' 'mirrors=apply' 'components=fish:fish  git:git' 'wsl=$(touch bad)' 'install='; do
-  printf 'schema_version=1\ninstall=all\ncomponents=fish:fish\nshell=fish\nmirrors=initialize\nwsl=none\n%s\n' "$invalid" > "$test_tmp/invalid.conf"
+  printf 'schema_version=2\ninstall=all\ncomponents=fish:fish\nshell=fish\nmirrors=initialize\nwsl=none\nwsl_profile=none\n%s\n' "$invalid" > "$test_tmp/invalid.conf"
   if workflow_read_profile "$test_tmp/invalid.conf" >/dev/null 2>&1; then printf 'Accepted invalid profile: %s\n' "$invalid" >&2; exit 1; fi
 done
 context="$test_tmp/context";mkdir "$context"

@@ -10,7 +10,7 @@
 | --- | --- | --- | --- |
 | `install/items/<id>.conf` | 是 | install reader | 平台 section + `key=value` |
 | `apply/items/<id>.conf` | 是 | apply reader | `[unix]` / `[windows]` + `key=value` |
-| `workflow/profiles/<name>.conf` | 是 | workflow profile reader | 无 section，六个必填字段 |
+| `workflow/profiles/<name>.conf` | 是 | workflow profile reader | 无 section，七个必填字段 |
 | `mirrors/current.conf` | 是 | mirror reader | 无 section，完整端点集合 |
 | `install/schema/*.tsv` 等 | 维护者 | parser / dispatcher | schema 或注册表，真实 Tab 分隔 |
 | 会话 `request.tsv`、`*.result`、摘要、journal | 否 | 状态查询、续跑、恢复 | 运行时产物，不是新增软件的配置入口 |
@@ -172,37 +172,36 @@ detect_dirs=applications:Docker.app
 | 字段 | 语义 |
 | --- | --- |
 | `source` | 必填，相对仓库根目录的文件或目录 |
-| `target_root` | 必填；Unix 必须是 `config_home`，Windows 必须是 `local_app_data` |
+| `target_root` | 必填；Unix 为 `home` / `config_home`，Windows 为 `home` / `app_data` / `local_app_data` |
 | `target` | 必填，相对上述根目录的目标 |
 | `method` | 必填；Unix 支持 hardlink/copy，Windows 只支持 copy |
 | `exclude` | 可选；相对 source 目录的路径，以 `;` 分隔。精确路径及其子树排除，不是 glob |
 
 `source`、`target` 和排除路径使用 `/`，不能是绝对路径，不能含 `.`、`..`、空路径段、冒号或反斜杠。文件 source 不能配 exclude。源路径及遍历到的未排除源文件不能是符号链接。
 
-`condition=linux-kde` 是可选的 Unix 环境条件，不满足时明确跳过。`renderer=desktop-fonts` 仅支持 Unix、linux-kde、hardlink 组合：除常规 source/target 映射外，为当前配置根下的 kdeglobals、gtk-3.0/settings.ini、gtk-4.0/settings.ini 渲染 copy 候选计划。这是固定处理器，不是任意命令；不接受自定义渲染目标。Windows 不接受这两个字段。该 renderer 的 source 必须是 Fontconfig XML 文件：顶层 alias 中的 system-ui 首选 family 用于 KDE/GTK 正文，monospace 首选 family 用于 KDE 等宽；全部 prefer/accept family 用于缺失字体预检。必须提供 sans-serif、serif、system-ui、monospace 四组非空 prefer，拒绝重复 alias、实体声明和无法安全表示的 family。
+`condition=linux-kde` 是可选的 Unix 环境条件，不满足时明确跳过。`renderer=desktop-fonts` 仅支持 Unix、config_home、linux-kde、hardlink 组合：除常规 source/target 映射外，为当前配置根下的 kdeglobals、gtk-3.0/settings.ini、gtk-4.0/settings.ini 渲染 copy 候选计划。这是固定处理器，不是任意命令；不接受自定义渲染目标。Windows 不接受这两个字段。该 renderer 的 source 必须是 Fontconfig XML 文件：顶层 alias 中的 system-ui 首选 family 用于 KDE/GTK 正文，monospace 首选 family 用于 KDE 等宽；全部 prefer/accept family 用于缺失字体预检。必须提供 sans-serif、serif、system-ui、monospace 四组非空 prefer，拒绝重复 alias、实体声明和无法安全表示的 family。
 
 例如 Fish 声明使用 `source=configs/fish`、`target=fish`；source 仍相对仓库根，不相对 configs 根。
 
-Unix 目标根为 `${XDG_CONFIG_HOME:-$HOME/.config}`；Windows 为 `LOCALAPPDATA`。组件 ID 按声明选择，单独 apply 未传组件时选择该平台全部组件。profile 的组件列表只约束安装 workflow，不会过滤单独 apply。
+Unix `home` 对应 `$HOME`，`config_home` 对应 `${XDG_CONFIG_HOME:-$HOME/.config}`；Windows `home`、`app_data`、`local_app_data` 分别对应 USERPROFILE、APPDATA、LOCALAPPDATA。仅解析所选组件使用的根；必需值缺失、非绝对或不可用时失败，不回退其他根。跨根按规范路径检查目标重叠。单独 apply 未传组件时读取所选或平台默认 profile 的组件，显式组件与显式 profile 互斥；不继承安装、shell、WSL 或镜像行为。镜像更新需显式 `--china-mirrors`。
 
 目录部署逐文件处理，未在源中列出的目标文件保留；不执行删除同步。声明目标与仓库、备份及其他组件目标不能重叠。计划动作有 mkdir、hardlink、copy、skip；具体文件系统限制见 [apply](../apply/README.md)。
 
 ## Workflow profile
 
-无 section，以下六个字段全部必填；`schema_version` 只在这里是用户声明字段。
+无 section，七个字段全部必填，profile 名称为 `[a-z][a-z0-9-]*`。入口只读取 `workflow/profiles/NAME.conf`，不接受外部文件或路径。
 
 | 字段 | 语义 |
 | --- | --- |
-| `schema_version=1` | 当前唯一版本，未知/缺失版本拒绝 |
-| `install` | `all` 或空格分隔安装项 ID；显式选择自动补齐传递依赖 |
-| `components` | 空格分隔 `apply-id:install-id`，同一 apply-id 不能重复；所需安装项必须在所选计划且未被环境排除 |
+| `schema_version=2` | 当前唯一声明版本 |
+| `install` | `none`、`all` 或空格分隔安装项 ID；显式列表自动补齐依赖，none 不调用安装发现或准备 |
+| `components` | `none` 或空格分隔 `apply-id[:install-id]`；无关联可独立部署，有关联时要求安装项在所选计划中且未被环境排除 |
 | `shell` | `fish` 或 `none` |
-| `mirrors` | `initialize` 或 `none` |
-| `wsl` | `none` 或 WSL 分发名 |
+| `mirrors` | `initialize` 或 `none`；决定安装下载镜像和 Unix 持久初始化，installer CLI 可覆盖 |
+| `wsl` | `none` 或已有 WSL2 分发名 |
+| `wsl_profile` | `none` 或 guest profile 名称；与 wsl 同时启用或同时为 none |
 
-`components` 不能留空；想只安装软件，应使用阶段选择参数而非生成空 profile。Unix 要求 `wsl=none`；Windows 要求 `shell=none`、`mirrors=none`，其 WSL guest 负责 Unix 初始化。
-
-入口自动选择 linux、wsl、macos 或 windows profile；当前没有 `--profile` 参数。新增任意 profile 文件不会自动成为可选入口。macOS 的 Git 配置关联 `xcode-command-line-tools`，因为其提供 Git；不要求 component 和 install ID 同名。
+`none` 必须单独使用，空字符串不合法；同一组件不能重复。Unix 要求 `wsl=none`，Windows 要求 `shell=none`。默认 `linux`、`wsl`、`macos`、`windows` 仅部署应用配置，排除桌面字体；原完整环境在同名 `*-full` 方案中，需显式 `--profile NAME` / `-Profile NAME` 选择。macOS 完整方案的 Git 关联 `xcode-command-line-tools`。`windows-full` 选择 FedoraLinux-44 和 wsl-full，自定义方案可选择其他已有 WSL2 guest。
 
 阶段注册表 [stages.tsv](../workflow/schema/stages.tsv) 定义平台、顺序、ID、gate、preflight、action；它属于执行框架，不是新增软件的修改点。处理器是允许列表中的标识符，不是命令串。
 
@@ -232,7 +231,7 @@ Unix 目标根为 `${XDG_CONFIG_HOME:-$HOME/.config}`；Windows 为 `LOCALAPPDAT
 | 变量 | 使用位置与含义 |
 | --- | --- |
 | `HOME`、`XDG_CONFIG_HOME` | Unix 用户目录与配置根；XDG 未设置时使用 `$HOME/.config` |
-| `LOCALAPPDATA` | Windows apply 根 |
+| `USERPROFILE`、`APPDATA`、`LOCALAPPDATA` | Windows apply 的 home、app_data、local_app_data 根 |
 | `DOTFILES_BACKUP_DIR` | 安装/部署会话的备份父目录 |
 | `DOTFILES_MIRROR_CONFIG` | Unix 镜像配置默认文件；显式 mirror/apply 参数可替代 |
 | `DOTFILES_WORKFLOW_SESSION_ID` | Unix 入口的默认会话 ID；显式 `--session-id` 优先 |

@@ -28,12 +28,6 @@
         "name": "PowerShell 7",
         "source": "Windows.Terminal.PowershellCore",
         "startingDirectory": "%USERPROFILE%"
-      },
-      {
-        "commandline": "wsl.exe -d FedoraLinux-44",
-        "guid": "{2c4de342-38b7-51cf-b940-2309a097f518}",
-        "hidden": false,
-        "name": "Fedora Linux"
       }
     ]
   },

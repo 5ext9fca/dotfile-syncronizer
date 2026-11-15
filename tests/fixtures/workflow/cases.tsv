@@ -13,3 +13,9 @@ bad-lifecycle	invalid
 command-data	invalid
 empty	invalid
 missing-components	invalid
+mixed-install-none	invalid
+mixed-components-none	invalid
+missing-guest	invalid
+unused-guest	invalid
+guest-path	invalid
+legacy-version	invalid

@@ -55,6 +55,14 @@ try {
     }
     $Context.OnlyStage = 'packages'; Reject { Initialize-WorkflowResume $Context }; $Context.OnlyStage = ''
     $Context.MirrorsExplicit = $true; Reject { Initialize-WorkflowResume $Context }; $Context.MirrorsExplicit = $false
+    $Context.ProfileExplicit = $true; Reject { Initialize-WorkflowResume $Context }; $Context.ProfileExplicit = $false
+    $Context.ProfileName = 'custom-profile'; Save-WorkflowRequest $Context $Temp
+    $Context.ProfileName = 'windows'; Initialize-WorkflowResume $Context
+    Assert ($Context.ProfileName -ceq 'custom-profile') 'Original profile name not restored'
+    $RequestPath = Join-Path $Temp 'request.tsv'
+    [IO.File]::WriteAllText($RequestPath, ([IO.File]::ReadAllText($RequestPath).Replace('workflow-request|2', 'workflow-request|1')))
+    Reject { Initialize-WorkflowResume $Context }
+    $Context.ProfileName = 'windows'; Save-WorkflowRequest $Context $Temp
     Complete-StageResult $Metadata 0 $false ''
     Reject { Initialize-WorkflowResume $Context }
     $Context.Resume = ''; $Context.StagePlan = @(Get-WorkflowStagePlan windows @{} '' ''); Save-WorkflowRequest $Context $Temp

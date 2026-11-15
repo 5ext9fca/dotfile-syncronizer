@@ -18,7 +18,7 @@ function New-TestWorkflowContext {
 try {
     foreach ($Name in @('linux', 'wsl', 'macos', 'windows')) {
         $Profile = Read-WorkflowProfile (Join-Path $Repo "workflow/profiles/$Name.conf")
-        Assert ($Profile.install -eq 'all') 'Default profile must select all platform items'
+        Assert ($Profile.install -eq 'none') 'Default profile must select no installation items'
     }
     $Profile = Read-WorkflowProfile (Join-Path $Repo 'workflow/profiles/windows.conf')
     $Plan = @(Get-InstallPlan -Directory (Join-Path $Repo 'install/items') -Inspect $false)
@@ -91,7 +91,7 @@ try {
     function Get-WindowsWorkflowGitPath { param($Context); Join-Path $Context.ProgramFiles 'missing-git.exe' }
     function Get-WindowsWorkflowWslPlan { param($Context); throw 'injected WSL preflight failure' }
     $Options = @{
-        RepoRoot = $Repo; SessionId = 'preflight'; DryRun = $false; PlanOnly = $false; NoChinaMirrors = $false
+        ProfileName = 'windows-full'; RepoRoot = $Repo; SessionId = 'preflight'; DryRun = $false; PlanOnly = $false; NoChinaMirrors = $false
         ResultsPath = ''; OnlyStage = ''; FromStage = ''; ConfigRoot = Join-Path $Temp 'preflight-config'
         BackupRoot = Join-Path $Temp 'preflight-backups'; ProgramFiles = Join-Path $Temp 'program-files'
         VsInstallerRoot = Join-Path $Temp 'vs-installer'; GitConfigPaths = @((Join-Path $Temp 'git-config'))
@@ -140,10 +140,27 @@ try {
     Assert ($Wsl.HostReport -eq '\\wsl.localhost\FedoraLinux-44\home\test\.dotfiles-workflow-shared.tsv') 'Missing structured child report location'
     $WslResult = Join-Path $Temp 'wsl.result'
     Initialize-StageResult $WslResult wsl ''
-    $WslContext = @{ RepoRoot = '\\wsl.localhost\FedoraLinux-44\home\test\repo'; Profile = @{ wsl = 'FedoraLinux-44' }; NoChinaMirrors = $false; SessionId = 'typed-child'; DryRun = $false; ResultsPath = '' }
+    $WslContext = @{ RepoRoot = '\\wsl.localhost\FedoraLinux-44\home\test\repo'; Profile = @{ wsl = 'FedoraLinux-44'; wsl_profile = 'wsl-full' }; NoChinaMirrors = $false; SessionId = 'typed-child'; DryRun = $false; ResultsPath = '' }
     & (Get-WindowsWorkflowActions).wsl $WslContext (Join-Path $Temp 'wsl.tsv') $WslResult
     $Artifacts = @(Read-StageResult $WslResult | Where-Object key -eq 'child_report')
     Assert ($Artifacts.Count -eq 1 -and $Artifacts[0].value -like '*typed-child.tsv') 'Child report was not passed through structured stage results'
+    # Arbitrary existing WSL2 distributions and guest profiles are data.
+    function wsl.exe {
+        $script:WslCalls += ,@($args)
+        $global:LASTEXITCODE = 0
+        if ($args[0] -eq '--list') { '  CustomLinux Running 2' }
+        elseif ($args -contains '--plan') { 'Stage configuration:' }
+    }
+    $Custom = Get-WorkflowWslPlan -RepoRoot '\\wsl.localhost\CustomLinux\home\test\repo' -Distribution CustomLinux -GuestProfile guest-config -SessionId custom -NoChinaMirrors $false
+    Assert ($Custom.Arguments -contains 'guest-config' -and $Custom.Arguments -contains '--china-mirrors') 'Custom guest profile or mirror policy not forwarded'
+    Assert (-not (@($script:WslCalls | Where-Object { $_ -contains '/etc/fedora-release' }).Count)) 'Fedora-specific inspection remains'
+    $Threw = $false
+    try { Get-WorkflowWslPlan -RepoRoot 'C:\repo' -Distribution CustomLinux -SessionId wrong } catch { $Threw = $true }
+    Assert $Threw 'Wrong checkout accepted'
+    function wsl.exe { $global:LASTEXITCODE = 0; if ($args[0] -eq '--list') { '  CustomLinux Running 1' } }
+    $Threw = $false
+    try { Get-WorkflowWslPlan -RepoRoot '\\wsl.localhost\CustomLinux\home\test\repo' -Distribution CustomLinux -SessionId version } catch { $Threw = $true }
+    Assert $Threw 'WSL1 accepted'
     $script:WslFail = $true; $Threw = $false
     try { Get-WorkflowWslPlan -RepoRoot '\\wsl.localhost\FedoraLinux-44\home\test\repo' -Distribution FedoraLinux-44 -SessionId failure } catch { $Threw = $true }
     Assert $Threw 'Failed WSL inspection accepted'

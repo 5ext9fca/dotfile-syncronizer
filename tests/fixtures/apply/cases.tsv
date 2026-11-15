@@ -21,3 +21,9 @@ desktop-fonts	unix	ok
 desktop-fonts-windows	windows	error
 desktop-fonts-condition	unix	error
 desktop-fonts-copy	unix	error
+home-unix	unix	ok
+home-windows	windows	ok
+app-data	windows	ok
+app-data-unix	unix	error
+config-home-windows	windows	error
+desktop-fonts-home	unix	error

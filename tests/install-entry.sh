@@ -16,7 +16,7 @@ printf '[unix]\nsource=sample\ntarget_root=config_home\ntarget=sample\nmethod=ha
 mkdir -p "$test_tmp/repo/workflow/profiles"
 cp -R "$repo_root/workflow/schema" "$test_tmp/repo/workflow/"
 for profile in linux wsl; do
-  printf 'schema_version=1\ninstall=all\ncomponents=sample:sample\nshell=fish\nmirrors=initialize\nwsl=none\n' > "$test_tmp/repo/workflow/profiles/$profile.conf"
+  printf 'schema_version=2\ninstall=all\ncomponents=sample:sample\nshell=fish\nmirrors=initialize\nwsl=none\nwsl_profile=none\n' > "$test_tmp/repo/workflow/profiles/$profile.conf"
 done
 for manager in apt dnf pacman; do
   cat >> "$test_tmp/repo/install/items/sample.conf" <<CONFIG

@@ -1,8 +1,8 @@
 # Dotfile Syncronizer
 
-以 Fish 为入口的跨平台安装器与配置仓库。可多次手动运行，按当前声明检查并跳过已有软件，安装缺失项、部署配置并记录结果；允许失败后人工处理，再重新运行或断点续跑。安装成功表示命令按执行策略正常退出，不进行安装后存在性复核。
+跨平台安装器与配置仓库，默认只部署应用配置。完整软件环境需显式选择 `*-full` profile。可多次手动运行，按当前声明检查并跳过已有软件，安装缺失项、部署配置并记录结果；允许失败后人工处理，再重新运行或断点续跑。安装成功表示命令按执行策略正常退出，不进行安装后存在性复核。
 
-支持 Linux 的 APT、DNF（包括原生 Fedora）、Pacman 分支、macOS，以及 Windows 主机与 `FedoraLinux-44` WSL2 的组合。Linux 分支按可用包管理器选择，不按发行版名称选择。
+支持 Linux 的 APT、DNF（包括原生 Fedora）、Pacman 分支、macOS，以及 Windows 主机和可选的已有 WSL2 分发。Linux 分支按可用包管理器选择，不按发行版名称选择。
 
 ## 脱敏版本与本机身份
 
@@ -36,19 +36,19 @@ git config --global user.email "you@example.com"
 ./install/macos.sh
 ```
 
-Windows 完整流程要求 checkout 位于 `FedoraLinux-44` 内；WSL 分发必须已初始化为 WSL2。安装器不会替你创建分发。
+Windows 默认仅复制 Terminal 配置，可从普通 Windows checkout 运行。显式选择 `windows-full` 时，checkout 要位于其声明的 `FedoraLinux-44` WSL2 内；自定义 profile 可选择其他已有 WSL2 分发和 guest profile。安装器不会创建分发。
 
 ```powershell
 $repo = '\\wsl.localhost\FedoraLinux-44\home\<user>\dotfiles'
-& "$repo\install\windows.ps1" -DryRun
-& "$repo\install\windows.ps1"
+& "$repo\install\windows.ps1" -Profile windows-full -DryRun
+& "$repo\install\windows.ps1" -Profile windows-full
 ```
 
-Unix 默认启用安装下载镜像，并在后续阶段初始化持久镜像设置。使用 `--no-china-mirrors` 或 Windows `-NoChinaMirrors` 跳过镜像设置；这不会撤销已有设置。详见 [安装](install/README.md) 和 [镜像](mirrors/README.md)。
+默认 `linux`、`macos`、`windows`、`wsl` 不安装软件、不改 shell、不处理镜像或启动 WSL；默认也不选择桌面字体。显式使用 `--profile linux-full`、`--profile macos-full` 或 Windows `-Profile windows-full` 执行完整环境。完整方案启用安装下载镜像及 Unix 持久镜像初始化，CLI 可覆盖 profile。使用 `--no-china-mirrors` 或 Windows `-NoChinaMirrors` 跳过镜像设置；这不会撤销已有设置。详见 [安装](install/README.md) 和 [镜像](mirrors/README.md)。
 
 原生 Debian/Ubuntu 和 Fedora/CentOS/RHEL 的 Docker 使用官方 CE 仓库；Arch 使用发行版包，WSL 使用 Windows Docker Desktop。已有冲突包由操作者处理后重跑，详见 [Docker 所有权与软件来源](install/README.md#docker-所有权)。
 
-原生 Linux 默认安装 Noto CJK 和 JetBrainsMono Nerd Font（不再下载苹方）；原生 KDE 的 `desktop-fonts` 组件配置桌面正文和等宽回退。IDE 自行配置，应用重启或重新登录后生效。来源和适用范围见 [字体安装](install/README.md#linux-桌面字体) 与 [桌面字体部署](apply/README.md#桌面字体)。
+`linux-full` 安装 Noto CJK 和 JetBrainsMono Nerd Font（不再下载苹方）；原生 KDE 的 `desktop-fonts` 组件配置桌面正文和等宽回退。IDE 自行配置，应用重启或重新登录后生效。来源和适用范围见 [字体安装](install/README.md#linux-桌面字体) 与 [桌面字体部署](apply/README.md#桌面字体)。
 
 ## 更新配置与处理失败
 
@@ -67,7 +67,7 @@ bash workflow/status.sh /path/to/workflow-session
 ./install/windows.ps1 -Resume 'C:\path\to\workflow-session' -DryRun
 ```
 
-`apply/apply.sh` 默认还应用当前镜像声明；只改应用配置时使用 `--no-mirrors`。续跑创建新会话、保留原阶段选择和镜像开关，并重新检查当前状态。dry-run 会话不能作为续跑来源，应保留原选项重新 dry-run。见 [workflow](workflow/README.md)。
+apply 默认只部署平台 profile 的组件，也可用 `--profile NAME` / `-Profile NAME` 选择；显式组件与显式 profile 互斥。Unix 镜像更新需显式传入 `--china-mirrors`。续跑读取原 profile 名称及当前声明，保留原阶段选择和生效镜像策略，并重新检查当前状态；v1 会话不支持续跑，已有备份和恢复 journal 保留。dry-run 会话不能作为续跑来源，应保留原选项重新 dry-run。见 [workflow](workflow/README.md)。
 
 ## 项目边界
 

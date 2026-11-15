@@ -41,7 +41,7 @@ apply_validate_results() {
   path="$(cd -- "$parent" && pwd -P)/$(basename -- "$results")"
   while IFS='|' read -r component action source target rest;do
     [[ -n "$component" ]] || continue
-    if [[ "$path" == "$source" || "$path" == "$target" ]] || { [[ -e "$results" ]] && { [[ -n "$source" && "$results" -ef "$source" ]] || [[ "$results" -ef "$target" ]]; }; };then
+    if [[ "$path" == "$source" || ( -n "$source" && "$path" == "$source/"* ) || "$path" == "$target" || "$path" == "$target/"* || "$target" == "$path/"* ]] || { [[ -e "$results" ]] && { [[ -n "$source" && "$results" -ef "$source" ]] || [[ "$results" -ef "$target" ]]; }; };then
       printf 'error: result file overlaps a deployment source or destination\n' >&2;return 1
     fi
   done <<< "$plan"

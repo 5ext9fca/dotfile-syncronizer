@@ -14,7 +14,9 @@ apply 将 `apply/items/*.conf` 声明的源文件部署到目标配置目录，�
 | desktop-fonts | `configs/fontconfig/60-dotfiles-fonts.conf` + 当前桌面设置 | Fontconfig `conf.d`、`kdeglobals`、GTK 3/4 `settings.ini` | 原生 KDE；规则 hardlink，候选设置 copy |
 | windows-terminal | `configs/windows-terminal/settings.json` | `LOCALAPPDATA/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json` | copy |
 
-`XDG_CONFIG_HOME` 未设定时使用 `$HOME/.config`。WSL profile 不选择 WezTerm，但直接运行不带组件选择的 Unix apply 仍选择所有 Unix 声明。需要同样的 WSL 选择时，使用 installer 的 configuration 阶段或显式指定组件。
+默认组件从当前平台 profile 读取，WSL 默认不选择 WezTerm，所有默认方案都排除 `desktop-fonts`。`--profile NAME` / `-Profile NAME` 可选择仓库内其他方案，不能与显式组件同时传入。apply 只读取组件，不执行方案中的安装、shell、WSL 或镜像行为。
+
+目标根按所选组件解析：Unix `home=$HOME`、`config_home=${XDG_CONFIG_HOME:-$HOME/.config}`；Windows `home=%USERPROFILE%`、`app_data=%APPDATA%`、`local_app_data=%LOCALAPPDATA%`。必需根缺失、非绝对或不可用时在变更前失败；跨根按最终路径检查重叠，桌面字体 renderer 仍只允许 `config_home`。
 
 ## 使用
 
@@ -34,15 +36,17 @@ apply 将 `apply/items/*.conf` 声明的源文件部署到目标配置目录，�
 
 | Unix | Windows | 用途 |
 | --- | --- | --- |
+| `--profile NAME` | `-Profile NAME` | 选择仓库内方案的组件，与显式组件互斥 |
+| `--china-mirrors` | 无 | 显式更新 Unix 镜像 |
 | `--plan` | `-PlanOnly` | 输出版本化文件计划，不部署 |
 | `--dry-run` | `-DryRun` | 显示将执行的操作，不修改目标 |
-| 位置参数 component | `-Components` | 指定组件；省略时全部 |
+| 位置参数 component | `-Components` | 指定组件；省略时读取 profile |
 | `--results FILE` | `-ResultsPath FILE` | 文件操作明细报告 |
 | `--restore JOURNAL` | `-Restore JOURNAL` | 显式恢复，不能同时选择组件 |
 | `--no-mirrors` | 无 | Unix 跳过镜像更新 |
 | `--mirror-config FILE` | 无 | Unix 使用指定镜像配置 |
 
-`--stage-result` / `-StageResultPath` 用于 workflow 传递结构化阶段结果，一般不需手动传入。Unix 的 `--china-mirrors` 是默认启用行为。
+`--stage-result` / `-StageResultPath` 用于 workflow 传递结构化阶段结果，一般不需手动传入。Unix 镜像更新必须显式指定 `--china-mirrors`。
 
 ## 文件操作语义
 
@@ -77,7 +81,7 @@ apply 将 `apply/items/*.conf` 声明的源文件部署到目标配置目录，�
 
 ## 与镜像、workflow 的关系
 
-独立 Unix apply 默认应用 `mirrors/current.conf`；即使只选择 fish，也不会隐式关闭镜像阶段。需要纯应用文件更新时显式使用 `--no-mirrors`。
+独立 Unix apply 默认只部署应用配置，`apply fish` 不处理镜像。显式指定 `--china-mirrors` 才应用 `mirrors/current.conf`；`--no-mirrors` 保留为显式关闭选项。
 
 安装 workflow 的 configuration 阶段禁用内嵌镜像，再单独执行 mirrors 初始化阶段。镜像复用同一文件计划/备份机制，规则见 [镜像说明](../mirrors/README.md)。真实部署和恢复遵守同一 [部署锁](../workflow/README.md)，不会自动清理异常退出留下的锁。
 

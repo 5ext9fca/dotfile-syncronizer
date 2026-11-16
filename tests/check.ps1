@@ -9,7 +9,7 @@ $RepoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $CurrentHost = if ($env:OS -eq 'Windows_NT') { 'windows' } elseif ((& uname -s) -eq 'Darwin') { 'macos' } else { 'linux' }
 $Bash = if ($env:DOTFILES_TEST_BASH) { $env:DOTFILES_TEST_BASH } else { 'bash' }
 $PowerShell = if ($env:DOTFILES_TEST_POWERSHELL) { $env:DOTFILES_TEST_POWERSHELL } else { (Get-Process -Id $PID).Path }
-$Python = if ($env:DOTFILES_TEST_PYTHON) { $env:DOTFILES_TEST_PYTHON } elseif ($CurrentHost -eq 'windows') { 'python' } else { 'python3' }
+$Python = if ($env:DOTFILES_TEST_PYTHON) { $env:DOTFILES_TEST_PYTHON } elseif ($env:DOTFILES_PYTHON) { $env:DOTFILES_PYTHON } elseif ($CurrentHost -eq 'windows') { Join-Path $RepoRoot '.venv/Scripts/python.exe' } else { Join-Path $RepoRoot '.venv/bin/python' }
 function Invoke-CheckCommand {
     param([string]$Command, [string[]]$Arguments, [switch]$Quiet)
     # Windows PowerShell represents native stderr as ErrorRecords; the child's
@@ -37,8 +37,8 @@ try {
         }
         if (-not (Get-Command $Command -ErrorAction SilentlyContinue)) { $Missing = "runtime $Command" }
         if ($Runtime -eq 'python' -and -not $Missing) {
-            $Code = Invoke-CheckCommand $Python @('-c', 'import sys; assert sys.version_info >= (3, 11)') -Quiet
-            if ($Code -ne 0) { $Missing = 'Python >=3.11' }
+            $Code = Invoke-CheckCommand $Python @('-c', 'import sys; assert sys.version_info[:2] == (3, 15)') -Quiet
+            if ($Code -ne 0) { $Missing = 'Python 3.15 (validation runtime)' }
         }
         if ($Id -eq 'install-parity' -and -not (Get-Command $Bash -ErrorAction SilentlyContinue)) { $Missing = "Bash $Bash" }
         if ($Id -eq 'shell-lint') {

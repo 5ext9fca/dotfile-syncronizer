@@ -91,3 +91,5 @@ Fedora job 使用 `registry.fedoraproject.org/fedora:latest` 容器，安装测�
 重复运行回归由 `install-resume.*`、`install-dependencies.*` 和 `workflow.sh` 覆盖：普通运行与续跑共享存在性检查、移除证据后重装、新声明入选、发现失败阻断、安装命令成功但不创建产物仍成功、公共/安装专用依赖区分、独立根项目保留、未选中工具不执行探测，以及无待安装项时不更新包索引或系统。
 
 `tests/profile-roots.sh` / `.ps1` 覆盖纯配置默认、none 集合、方案名称、受控目标根、跨根冲突；Unix 还验证隔离 CLI、重复部署、备份和恢复。WSL 分发和 guest profile 的隔离参数检查位于 `tests/workflow.ps1`，不能代替原生 Windows/WSL 验证。
+
+Python 核心测试位于 `tests/core/`。检查工具默认使用本 checkout 的 `.venv`，也可显式设置 `DOTFILES_PYTHON` 或测试专用的 `DOTFILES_TEST_PYTHON`；Python 验证要求 3.15，缺失或版本不符时 strict 检查失败。运行时与协议测试涵盖固定解释器、仓库外启动、中文与空格路径、严格 JSON、操作允许列表和进程退出码一致性。

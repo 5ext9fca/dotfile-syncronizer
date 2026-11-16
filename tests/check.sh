@@ -17,7 +17,7 @@ case "$suite" in core|cross|dry-run|lint|all) ;; *) usage >&2; exit 2 ;; esac
 case "$(uname -s)" in Linux) host=linux ;; Darwin) host=macos ;; *) printf 'Use tests/check.ps1 on Windows.\n' >&2; exit 2 ;; esac
 bash_command="${DOTFILES_TEST_BASH:-$BASH}"
 ps_command="${DOTFILES_TEST_POWERSHELL:-pwsh}"
-python_command="${DOTFILES_TEST_PYTHON:-python3}"
+python_command="${DOTFILES_TEST_PYTHON:-${DOTFILES_PYTHON:-$repo_root/.venv/bin/python}}"
 cd "$repo_root"
 while IFS=$'\t' read -r id group hosts runtime entry arguments; do
   [[ -n "$id" && "$id" != \#* ]] || continue
@@ -34,7 +34,7 @@ while IFS=$'\t' read -r id group hosts runtime entry arguments; do
     *) printf 'error: unknown check runtime: %s\n' "$runtime" >&2; exit 2 ;;
   esac
   if ! command -v "${command_args[0]}" >/dev/null 2>&1; then missing="runtime ${command_args[0]}"; fi
-  if [[ "$runtime" == python && -z "$missing" ]] && ! "$python_command" -c 'import sys; assert sys.version_info >= (3, 11)' >/dev/null 2>&1; then missing='Python >=3.11'; fi
+  if [[ "$runtime" == python && -z "$missing" ]] && ! "$python_command" -c 'import sys; assert sys.version_info[:2] == (3, 15)' >/dev/null 2>&1; then missing='Python 3.15 (validation runtime)'; fi
   if [[ "$id" == install-parity ]] && ! command -v "$bash_command" >/dev/null 2>&1; then missing="Bash $bash_command"; fi
   if [[ "$id" == shell-lint ]] && ! command -v "${DOTFILES_TEST_SHELLCHECK:-shellcheck}" >/dev/null 2>&1; then missing='ShellCheck'; fi
   if [[ -n "$missing" ]]; then

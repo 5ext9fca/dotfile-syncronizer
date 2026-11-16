@@ -78,3 +78,4 @@ profile-roots-windows	core	windows	powershell	tests/profile-roots.ps1	-
 profile-roots-portable	cross	linux macos	powershell	tests/profile-roots.ps1	-
 linux-full-mirrors	dry-run	linux	bash	install/linux.sh	--profile linux-full --dry-run --yes
 macos-full-mirrors	dry-run	macos	bash	install/macos.sh	--profile macos-full --dry-run
+python-core	core	linux macos windows	python	tests/core	-

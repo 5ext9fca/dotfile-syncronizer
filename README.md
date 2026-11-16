@@ -94,6 +94,8 @@ apply 默认只部署平台 profile 的组件，也可用 `--profile NAME` / `-P
 | [数据契约](contracts/README.md) | 计划、报告和进程执行接口 |
 | [验证](tests/README.md) | 本地检查、运行时要求和已禁用的 CI 配置 |
 
+共享核心的 Python 运行时准备见 [安装手册](install/README.md#python-运行时)。
+
 ## 本地验证
 
 仓库 CI 已禁用，原工作流保留为 `.github/workflows/install.yml.disabled`。验证请手动运行本地检查；恢复方式见 [验证文档](tests/README.md#ci-与本机验证边界)。

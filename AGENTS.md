@@ -35,6 +35,8 @@ Runtime ownership uses `environments`, `provides`, and `wsl_provider`; capabilit
 
 ## Documentation and Configuration Authoring
 
+When maintaining software declarations, configuration capture paths, or profiles, read and follow [skills/maintain-software/SKILL.md](skills/maintain-software/SKILL.md). This repository skill coordinates the authoring and non-mutating validation workflow; the current schemas and configuration guide remain authoritative.
+
 Keep the root `README.md` strictly as a user guide: prerequisites, usage, configuration, operating limits, troubleshooting, and links to user-facing documentation. Put architecture and internal contracts in their dedicated documents, and testing procedures and CI status in `tests/README.md`; do not add development notes or acceptance records to the root README.
 
 Keep all acceptance and validation run records in `tests/acceptance.md`, organized by date and change. Record the actual environment, commands or checks, results, failures and reruns, and skipped or unexecuted checks without overstating coverage. Keep `tests/README.md` focused on reusable testing instructions and link to the acceptance records instead of duplicating them.

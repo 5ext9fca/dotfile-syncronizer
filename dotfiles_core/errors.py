@@ -1,7 +1,7 @@
 """Explicit failures at the core/platform boundary."""
 
 
-from dotfiles_viewer.errors import CoreError
+from dotfile_viewer.errors import CoreError
 
 
 class RuntimeRequirementError(CoreError):

@@ -28,7 +28,7 @@ Stages: --only-stage NAME or --from-stage NAME (packages).
 Profiles select software IDs for installation only.
 Configuration migration uses snapshot/snapshot.sh; mirrors and shell are not initialized.
 --china-mirrors / --no-china-mirrors override the selected profile.
-Profiles come from dotfiles-viewer; --catalog DIR selects a complete external catalog.
+Profiles come from dotfile-viewer; --catalog DIR selects a complete external catalog.
 EOF
 }
 

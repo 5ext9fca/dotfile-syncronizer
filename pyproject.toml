@@ -4,4 +4,4 @@ version = "0.2.0"
 description = "Cross-platform dotfile installer and configuration manager"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = ["dotfiles-viewer>=0.2,<0.3"]
+dependencies = ["dotfile-viewer>=0.2,<0.3"]

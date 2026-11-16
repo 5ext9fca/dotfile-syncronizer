@@ -86,7 +86,7 @@ class SnapshotTests(unittest.TestCase):
         self.assertIn('empty/new', [e['path'] for e in snapshot.entries])
 
     def test_capture_changes_fail(self):
-        from dotfiles_viewer import snapshot
+        from dotfile_viewer import snapshot
         original = snapshot.inventory
         calls = 0
         def inventory(*args):

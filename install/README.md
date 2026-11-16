@@ -67,12 +67,12 @@ macOS Docker 声明 cask/manual 两种发现方式，优先使用 cask 安装。
 
 ## Python 运行时
 
-共享核心使用 Python ≥3.14 和预先安装的 dotfiles-viewer；验证仅使用 3.14，不主动拒绝更高版本。请预先在当前 checkout 的 `.venv` 中准备解释器（Unix：`.venv/bin/python`；Windows：`.venv/Scripts/python.exe`），或将 `DOTFILES_PYTHON` 设为单个解释器路径。不会自动搜索其他环境或安装依赖。初始化后固定解释器路径并保留虚拟环境路径。Windows 与 WSL 分别准备各自的运行时。启动运行时独立于受管理的 Python 安装项。
+共享核心使用 Python ≥3.14 和预先安装的 dotfile-viewer；验证仅使用 3.14，不主动拒绝更高版本。请预先在当前 checkout 的 `.venv` 中准备解释器（Unix：`.venv/bin/python`；Windows：`.venv/Scripts/python.exe`），或将 `DOTFILES_PYTHON` 设为单个解释器路径。不会自动搜索其他环境或安装依赖。初始化后固定解释器路径并保留虚拟环境路径。Windows 与 WSL 分别准备各自的运行时。启动运行时独立于受管理的 Python 安装项。
 
 迁移参考为原项目 `696256f`，行为基线为本仓库 `bca3835`；原项目的私有配置不属于迁移内容。临时 UTF-8 JSON 协议仅用于当前调用，不是持久计划或重放接口。
 
-所有 plan、dry-run、resume 和 restore 同样要求运行时；帮助信息不要求。运行期间不得替换正在使用的虚拟环境。核心依赖预先安装的 dotfiles-viewer，不自动安装依赖。可通过预先安装的 Python 3.14 创建环境，例如 `python3.14 -m venv .venv`；Windows 使用已安装的 3.14 解释器运行同一 `-m venv .venv` 命令。
+所有 plan、dry-run、resume 和 restore 同样要求运行时；帮助信息不要求。运行期间不得替换正在使用的虚拟环境。核心依赖预先安装的 dotfile-viewer，不自动安装依赖。可通过预先安装的 Python 3.14 创建环境，例如 `python3.14 -m venv .venv`；Windows 使用已安装的 3.14 解释器运行同一 `-m venv .venv` 命令。
 
 ## Viewer 依赖
 
-运行前安装 dotfiles-viewer>=0.2,<0.3。默认声明与 schema 来自该包；--catalog DIR / -Catalog DIR 或 DOTFILES_CATALOG 选择外部完整目录。声明唯一来源不在本 checkout。
+运行前安装 dotfile-viewer>=0.2,<0.3。默认声明与 schema 来自该包；--catalog DIR / -Catalog DIR 或 DOTFILES_CATALOG 选择外部完整目录。声明唯一来源不在本 checkout。

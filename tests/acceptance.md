@@ -2,6 +2,19 @@
 
 本文件记录各次变更的实际验证结果；历史记录不代表当前版本或未执行平台已通过验证。测试运行方法及 CI 状态见 [测试与验证](README.md)。
 
+## Viewer 更名为 dotfile-viewer（2026-11-16）
+
+环境：macOS ARM64，Python 3.14.10。依赖改为 `dotfile-viewer>=0.2,<0.3`；Python 导入、Bash/PowerShell 入口、资源定位、测试及文档均改用 `dotfile_viewer`。不添加 Viewer 旧名称兼容层；既有备份、journal、环境变量和共享部署锁协议不变。
+
+- 卸载旧发行包后，首次离线可编辑安装因本环境缺少 setuptools 失败；随后离线安装 Viewer 构建的 wheel 成功。环境中已确认新发行包/API 可用，旧 `dotfiles_viewer` 导入不存在。运行前完成依赖安装，没有在测试期间替换解释器或运行依赖。
+- `./tests/check.sh --strict`：30 项检查通过、0 失败、24 项因宿主平台不适用跳过。包括安装、应用、镜像、恢复、共享租约、超时/取消和组合快照；Python 核心测试 163 项，162 通过、1 项因 PowerShell 不可用跳过。
+- `./tests/check.sh --suite dry-run --strict`：首次沙箱内执行时，4 项 macOS 检查均因默认备份父目录的可写性预检受限而失败；在沙箱外重跑，4 项 macOS 检查全部通过、4 项 Linux 检查按平台跳过。覆盖默认及完整配置、镜像与上游源预览；没有真实安装软件或应用配置。
+- Viewer 自身 18 项隔离测试通过；从干净源码构建 wheel，在新的 Python 3.14 环境和 checkout 外验证新 CLI/API、54 个默认声明、五个平台图、8 个 profile 及共享锁资源，确认没有旧包或旧命令入口。
+- 两仓库共 9 个相关 Bash 脚本通过语法检查；当前环境未提供 ShellCheck/PowerShell，未声称完成这些工具的检查。两仓库 `git diff --check` 通过。
+- 已复核 README、AGENTS、架构、配置、声明编写指南、组件和测试文档，以及维护 skill 中的 Viewer 名称；README 补充更名升级步骤并移除过时的 Web UI 描述。历史验收记录保留当时名称。
+
+未运行原生 Linux、Windows、WSL 验证；模拟和平台图检查不代表原生覆盖。未采集或改写真实用户配置。Viewer 功能检查发现的既有缺口记录在其 `tests/acceptance.md`，本次仅完成更名和依赖联动。
+
 ## Agent 软件声明维护 skill（2026-11-16）
 
 本次只新增 `skills/maintain-software/SKILL.md` 并更新文档入口，没有修改软件声明、profile 或执行代码。验证环境为 macOS，checkout `.venv/bin/python` 为 Python 3.15.0a8。

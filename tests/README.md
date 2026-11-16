@@ -14,4 +14,4 @@ CI 仍禁用，原流程保留为 `.github/workflows/install.yml.disabled`，不
 
 按日期和变更整理的实际环境、检查结果及未执行范围见 [验收记录](acceptance.md)。本页只维护可复用的测试说明。
 
-迁移依赖：测试前安装本地 dotfiles-viewer 0.2.x。统一声明及快照实现的单元测试由 Viewer 维护，本项目继续验证安装、镜像、会话和组合快照流程。旧 v1 快照和公开 journal 恢复命令不再受支持。
+迁移依赖：测试前安装本地 dotfile-viewer 0.2.x。统一声明及快照实现的单元测试由 Viewer 维护，本项目继续验证安装、镜像、会话和组合快照流程。旧 v1 快照和公开 journal 恢复命令不再受支持。

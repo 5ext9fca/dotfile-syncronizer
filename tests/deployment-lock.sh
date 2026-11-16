@@ -38,8 +38,8 @@ if deployment_run 0 false;then exit 1;fi
 import os
 from pathlib import Path
 from unittest.mock import patch
-from dotfiles_viewer.lease import acquire
-with patch('dotfiles_viewer.lease.socket.gethostname', side_effect=OSError('metadata')):
+from dotfile_viewer.lease import acquire
+with patch('dotfile_viewer.lease.socket.gethostname', side_effect=OSError('metadata')):
     try:
         acquire()
     except OSError:

@@ -1,6 +1,6 @@
 # 配置应用
 
-此目录只保留快照应用的命令适配器，文件读取、备份、复制和原子报告由 dotfiles-viewer 负责。
+此目录只保留快照应用的命令适配器，文件读取、备份、复制和原子报告由 dotfile-viewer 负责。
 
 ```bash
 ./apply/apply.sh --snapshot /path/to/v2.zip --dry-run

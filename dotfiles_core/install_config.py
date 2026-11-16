@@ -1,8 +1,8 @@
 """Installation declaration adapters; parsing belongs to Viewer."""
 from pathlib import Path
-from dotfiles_viewer.install_config import *
-from dotfiles_viewer.install_config import read_items as _read_items
-from dotfiles_viewer.api import catalog_root
+from dotfile_viewer.install_config import *
+from dotfile_viewer.install_config import read_items as _read_items
+from dotfile_viewer.api import catalog_root
 ROOT = Path(__file__).resolve().parents[1]
 
 def read_items(directory, platform, schema_directory=None):

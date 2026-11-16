@@ -1,6 +1,6 @@
 # Dotfile Syncronizer
 
-手动运行的软件安装与配置迁移编排器。统一软件声明、profile、配置查看编辑和快照能力由依赖包 **dotfiles-viewer** 提供；本项目不维护第二份声明或应用配置正文。
+手动运行的软件安装与配置迁移编排器。统一软件声明、profile、配置查看编辑和快照能力由依赖包 **dotfile-viewer** 提供；本项目不维护第二份声明或应用配置正文。
 
 ## 准备
 
@@ -8,8 +8,10 @@
 
 ```bash
 python3.14 -m venv .venv
-.venv/bin/python -m pip install -e /path/to/dotfiles-viewer
+.venv/bin/python -m pip install -e /path/to/dotfile-viewer
 ```
+
+从旧名称升级时，先在该环境执行 `python -m pip uninstall dotfiles-viewer`，再安装 `dotfile-viewer`。本项目已同步使用 `dotfile_viewer` 导入和模块入口，不保留 Viewer 旧名称兼容层；既有备份目录、`DOTFILES_*` 环境变量和共享锁路径保持不变。
 
 Windows 使用 `.venv\Scripts\python.exe`，或显式设置 `DOTFILES_PYTHON`。不要在运行过程中替换解释器。
 
@@ -43,4 +45,4 @@ Windows 使用 `.venv\Scripts\python.exe`，或显式设置 `DOTFILES_PYTHON`。
 
 失败后检查报告和备份，处理原因后手动重跑。未知额外文件保留，不跨软件安装与配置阶段回滚，不自动重试或回收遗留部署锁。历史 journal 恢复命令已移除，已有资料不删除。
 
-查看、编辑、本机 Web UI、声明维护和独立快照操作见 Viewer 文档。详细安装命令见 [安装](install/README.md)，组合流程见 [快照](snapshot/README.md)，验证见 [测试](tests/README.md)。
+查看、编辑、声明维护和独立快照操作见 Viewer 文档。详细安装命令见 [安装](install/README.md)，组合流程见 [快照](snapshot/README.md)，验证见 [测试](tests/README.md)。

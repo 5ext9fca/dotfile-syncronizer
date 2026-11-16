@@ -1,6 +1,6 @@
 # 架构
 
-syncronizer 单向依赖 dotfiles-viewer>=0.2,<0.3。Viewer 拥有唯一软件声明、profile、schema、解析与依赖选择，以及配置编辑、快照 v2、文件应用和共享部署锁。此项目的 software/snapshot/install_config 模块只保留兼容导入与安装计划序列化。
+syncronizer 单向依赖 dotfile-viewer>=0.2,<0.3。Viewer 拥有唯一软件声明、profile、schema、解析与依赖选择，以及配置编辑、快照 v2、文件应用和共享部署锁。此项目的 software/snapshot/install_config 模块只保留兼容导入与安装计划序列化。
 
 本项目保留安装观察、机制 handlers、超时与退出码策略、原生适配器、镜像和安装会话调度。安装成功按命令退出策略，不增加安装后探测。配置应用调用 Viewer API，不再实现第二套快照事务。
 

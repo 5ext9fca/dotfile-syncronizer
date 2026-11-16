@@ -12,4 +12,4 @@ for arg in "$@";do
   [[ "$arg" != --plan ]] || arg=--dry-run
   args+=("$arg")
 done
-exec "$dotfiles_python_executable" -m dotfiles_viewer snapshot apply "${args[@]}"
+exec "$dotfiles_python_executable" -m dotfile_viewer snapshot apply "${args[@]}"

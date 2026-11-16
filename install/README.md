@@ -43,9 +43,9 @@
 
 APT/DNF 使用专用 `docker-ce` handler；按包清单检查 CE，已有 Moby 或 `docker.io` 不会被当作 CE 跳过。仓库文件和密钥覆盖前保存到本次会话备份。已有冲突包需由操作者先处理，再手动重跑；安装器不自动删除 Moby、Podman、containerd 或容器数据。非上述发行版的 APT/DNF 主机在 Docker 待安装时预检失败，不猜测兼容仓库。镜像开关不改写 Docker 官方源。参考 [Fedora](https://docs.docker.com/engine/install/fedora/)、[Debian](https://docs.docker.com/engine/install/debian/) 和 [Ubuntu](https://docs.docker.com/engine/install/ubuntu/) 官方说明。
 
-此表解释 [docker.conf](../software/items/docker.toml) 的当前选择。Docker Desktop 的首次启动、授权和 WSL 集成开关由用户处理；安装器不执行 `docker info`、启动容器或检查服务健康。
+此表解释 [docker.toml](../software/items/docker.toml) 的当前选择。Docker Desktop 的首次启动、授权和 WSL 集成开关由用户处理；安装器不执行 `docker info`、启动容器或检查服务健康。
 
-macOS Docker 声明 cask/manual 两种发现方式，优先使用 cask 安装。仅检查声明的目录：已有 `/Applications/Docker.app` 时跳过，不启动 Docker 或查询版本；只有独立 Docker CLI 不会满足这些目录条件。应用完整性与版本不在存在性检查保证内。多方式声明和路径规则见 [配置语义](../docs/configuration.md#多种安装方式与应用发现)。
+macOS Docker 声明 cask/manual 两种发现方式，优先使用 cask 安装。仅检查声明的目录：已有 `/Applications/Docker.app` 时跳过，不启动 Docker 或查询版本；只有独立 Docker CLI 不会满足这些目录条件。应用完整性与版本不在存在性检查保证内。多方式声明和路径规则见 [配置语义](../docs/configuration.md#软件声明-v1)。
 
 
 ## 软件来源核对

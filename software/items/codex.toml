@@ -37,3 +37,18 @@ packages = "codex"
 source_kind = "default"
 detect_files = "path:codex"
 install_depends_on = "homebrew"
+
+# Keep authentication, sessions, databases and installed plugins outside capture.
+[[config]]
+id = "settings"
+platforms = ["macos"]
+root = "home"
+path = ".codex/config.toml"
+exclude = []
+
+[[config]]
+id = "rules"
+platforms = ["macos"]
+root = "home"
+path = ".codex/rules"
+exclude = []

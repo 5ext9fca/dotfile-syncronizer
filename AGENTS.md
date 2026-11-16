@@ -16,6 +16,8 @@ This project is a manually launched software/configuration snapshot collector an
 - Do not add service health/readiness probes or make installation/configuration success depend on running services.
 - Preserve and maintain existing backups, guarded recovery, atomic report publication, deployment leases, and command timeout/cancellation behavior. These scope limits do not authorize removing existing safeguards; fix regressions within their current contracts without broadening their guarantees.
 
+Software/configuration declarations and profiles are user-maintained; the repository supplies editable defaults, not exhaustive coverage. Evaluate capability gaps against declaration validation, execution and protection contracts, not default package or configuration coverage. Users own source selection, paths and exclusions; do not infer unverified platform paths or package identities when extending defaults.
+
 ## Project Structure & Module Organization
 
 Maintain software and configuration path declarations together in `software/items/<id>.toml`. Do not maintain application configuration payloads in this repository. Capture recursively from declared directories or single files into a ZIP snapshot, with explicit exclusions; missing paths and unexcluded links fail the capture. Restore independent copies with backups and preserve extra destination files.

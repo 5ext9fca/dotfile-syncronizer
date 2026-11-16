@@ -55,3 +55,11 @@ source_kind = "winget"
 source_repo = "winget"
 environments = "native"
 provides = "docker"
+
+# Capture daemon settings only, not CLI credentials or runtime state.
+[[config]]
+id = "daemon-settings"
+platforms = ["macos"]
+root = "home"
+path = ".docker/daemon.json"
+exclude = []

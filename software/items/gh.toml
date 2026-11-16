@@ -32,3 +32,11 @@ packages = "GitHub.cli"
 source_kind = "winget"
 source_repo = "winget"
 detect_files = "path:gh.exe"
+
+# Do not capture hosts.yml, which may contain authentication tokens.
+[[config]]
+id = "settings"
+platforms = ["macos"]
+root = "config_home"
+path = "gh/config.yml"
+exclude = []

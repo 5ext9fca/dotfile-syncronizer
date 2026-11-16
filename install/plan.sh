@@ -6,7 +6,7 @@ source "$script_dir/../lib/install-items.sh"
 # shellcheck source=../lib/plan-explain.sh
 source "$script_dir/../lib/plan-explain.sh"
 explain=0
-platform='' mirrors=1 wsl=0 items="$script_dir/items"
+platform='' mirrors=1 wsl=0 items="$script_dir/../software/items"
 while (( $# )); do
   case "$1" in
     --platform) platform="$2"; shift ;;

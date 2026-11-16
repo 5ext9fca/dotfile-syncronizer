@@ -17,7 +17,7 @@ exclude-escape	unix	error
 empty-exclusion	unix	error
 empty-file	unix	error
 uppercase-key	unix	error
-desktop-fonts	unix	ok
+desktop-fonts	unix	error
 desktop-fonts-windows	windows	error
 desktop-fonts-condition	unix	error
 desktop-fonts-copy	unix	error

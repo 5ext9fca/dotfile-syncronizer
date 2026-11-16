@@ -36,7 +36,7 @@ workflow_print_plan() {
     if [[ "$enabled" != 1 ]];then printf 'Stage %s: skipped (%s)\n' "$stage" "$reason";continue;fi
     printf '\nStage %s:\n' "$stage"
     case "$action" in
-      packages) workflow_plan_preparation "$context";install_explain_plan "$(cat "$context/install.plan")" "$(workflow_context_get "$context" platform)" "$(workflow_profile_value "$(cat "$context/profile")" install)" "$(workflow_context_get "$context" repo_root)/install/items";contract_write install-plan "$(cat "$context/install.plan")" ;;
+      packages) workflow_plan_preparation "$context";install_explain_plan "$(cat "$context/install.plan")" "$(workflow_context_get "$context" platform)" "$(workflow_profile_value "$(cat "$context/profile")" install)" "$(workflow_context_get "$context" repo_root)/software/items";contract_write install-plan "$(cat "$context/install.plan")" ;;
       configuration) apply_explain_plan "$(cat "$context/configuration.plan")";contract_write apply-plan "$(cat "$context/configuration.plan")" ;;
       mirrors) printf 'Lifecycle: initialize (preserve existing settings)\n';apply_explain_plan "$(cat "$context/mirrors.plan")";contract_write apply-plan "$(cat "$context/mirrors.plan")" ;;
       shell) printf 'Set login shell to Fish; recheck executable and account at execution.\n' ;;

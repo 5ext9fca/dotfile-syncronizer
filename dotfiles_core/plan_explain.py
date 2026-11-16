@@ -39,7 +39,7 @@ def request(operation: str, context: dict) -> tuple[object, list[str]]:
             directory = Path(context['directory'])
             available = {item['id'] for item in read_items(directory, platform)}
             selected = {item['id'] for item in items}
-            for path in sorted(directory.glob('*.conf')):
+            for path in sorted(directory.glob('*.toml')):
                 if path.stem not in selected:
                     reason = 'not-selected-by-profile' if path.stem in available else 'platform-not-configured'
                     lines.append(f'  {path.stem}: excluded ({reason})')

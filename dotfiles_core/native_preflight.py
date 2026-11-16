@@ -78,7 +78,7 @@ class NativePreflight:
             self.install_context = dict(DryRun=inputs.dry, ProgramFiles=inputs.native['ProgramFiles'],
                                         VsInstallerRoot=inputs.native['VsInstallerRoot'])
         runner = native_installation(self.style, self.shell_path, self.install_context)
-        return runner.plan(self.paths.join(inputs.repo, 'install/items'), inputs.platform, inputs.mirrors,
+        return runner.plan(self.paths.join(inputs.repo, 'software/items'), inputs.platform, inputs.mirrors,
                            bool(inputs.native.get('inside_wsl', False)), profile['install'], mode)
 
     def apply_session(self, base: str) -> str:

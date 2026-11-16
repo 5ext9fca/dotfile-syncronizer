@@ -7,10 +7,10 @@ from dotfiles_core.errors import ProtocolError
 from dotfiles_core.protocol import Request, Result, write_json
 
 OPERATIONS = frozenset(('install-command', 'publish-report', 'discovery-path',
-                        'install-state', 'install-command-probe', 'install-target-check', 'apply-query', 'apply-render', 'workflow-stage', 'workflow-query', 'workflow-prepare-command', 'apply-effect', 'apply-restore', 'workflow-shell-command'))
+                        'install-state', 'install-command-probe', 'install-target-check', 'apply-query', 'workflow-stage', 'workflow-query', 'workflow-prepare-command', 'apply-effect', 'apply-restore', 'workflow-shell-command'))
 
-APPLY_BOOLEAN_QUERIES = frozenset(('equal-copy', 'equal-hardlink', 'desktop-supported', 'file', 'exists', 'directory', 'readonly'))
-APPLY_QUERIES = frozenset(('entry', 'state', 'tree', 'anchor', 'identity', 'desktop-families', 'desktop-required',
+APPLY_BOOLEAN_QUERIES = frozenset(('equal-copy', 'equal-hardlink', 'file', 'exists', 'directory', 'readonly'))
+APPLY_QUERIES = frozenset(('entry', 'state', 'tree', 'anchor', 'identity',
                           'resolve-root', 'physical-directory', 'permissions', 'go-env', 'manjaro-branch', 'mirror-sources')) | APPLY_BOOLEAN_QUERIES
 
 
@@ -68,11 +68,6 @@ def validate(request: Request) -> None:
             raise ProtocolError('Invalid native publication request')
         if not all(isinstance(context[key], str) for key in context):
             raise ProtocolError('Invalid native publication field')
-    elif request.operation == 'apply-render':
-        if set(context) != {'kind', 'target', 'candidate', 'fontconfig'} or context['kind'] not in ('kdeglobals', 'gtk-3.0/settings.ini', 'gtk-4.0/settings.ini'):
-            raise ProtocolError('Invalid desktop rendering request')
-        if not all(isinstance(value, str) and '\0' not in value for value in context.values()):
-            raise ProtocolError('Invalid desktop rendering path')
     elif request.operation == 'apply-query':
         if set(context) != {'query', 'path', 'other'} or context['query'] not in APPLY_QUERIES:
             raise ProtocolError('Invalid native apply query')
@@ -100,7 +95,7 @@ def arguments(request_path: Path, output: Path, platform: str) -> None:
             raise ProtocolError('Unix-only workflow action')
         if request.operation in ('workflow-stage', 'workflow-query') and request.context['style'] != 'windows':
             raise ProtocolError('Workflow adapter style mismatch')
-        if request.operation not in ('publish-report', 'apply-query', 'apply-render', 'apply-effect', 'apply-restore') and not isinstance(request.context['native_context'], dict):
+        if request.operation not in ('publish-report', 'apply-query', 'apply-effect', 'apply-restore') and not isinstance(request.context['native_context'], dict):
             raise ProtocolError('Windows native context must be an object')
         # PowerShell consumes the validated JSON directly.
         return
@@ -125,8 +120,6 @@ def arguments(request_path: Path, output: Path, platform: str) -> None:
         values = [request.operation, context['directory'], context['action'], context['report'], context['metadata'], context['log']]
     elif request.operation == 'publish-report':
         values = [request.operation, context['path'], context['text'], context['mode']]
-    elif request.operation == 'apply-render':
-        values = [request.operation, context['kind'], context['target'], context['candidate'], context['fontconfig']]
     elif request.operation == 'apply-query':
         values = [request.operation, context['query'], context['path'], context['other'], '']
     elif request.operation == 'discovery-path':

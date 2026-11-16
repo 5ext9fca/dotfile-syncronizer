@@ -24,7 +24,7 @@ count=0
 while IFS=$'\t' read -r name platform profile only from mirrors registry expected; do
   [[ "$only" != - ]] || only=''
   [[ "$from" != - ]] || from=''
-  if [[ "$registry" == - ]];then registry="$repo_root/workflow/schema/stages.tsv";else registry="$fixtures/stages/$registry";fi
+  if [[ "$registry" == - ]];then registry="$fixtures/stages/legacy.tsv";else registry="$fixtures/stages/$registry";fi
   profile="$(workflow_read_profile "$fixtures/stages/$profile.conf")"
   if workflow_stage_plan "$platform" "$profile" "$only" "$from" "$mirrors" "$registry" > "$test_tmp/actual" 2> "$test_tmp/error";then
     [[ "$expected" == valid ]] || { printf 'Accepted invalid stage case: %s\n' "$name" >&2;exit 1; }

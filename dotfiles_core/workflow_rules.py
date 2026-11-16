@@ -21,10 +21,21 @@ def settings(text: str) -> dict[str, str]:
 
 
 def profile_fields() -> list[tuple[str, str, str]]:
-    return [tuple(row) for row in rows(ROOT / 'workflow/schema/profile-fields.tsv')]
+    return [tuple(row) for row in rows(ROOT / 'workflow/schema/profile-context-fields.tsv')]
 
 
 def read_profile(path: Path) -> dict[str, str]:
+    if 'schema_version=3' in path.read_text(encoding='utf-8-sig').splitlines():
+        from dotfiles_core.software import profile_selection
+        from dotfiles_core.install_config import DeclarationError
+        try:
+            names = profile_selection(path)
+        except DeclarationError as exc:
+            raise WorkflowRuleError(str(exc)) from exc
+        return dict(schema_version='3', install=' '.join(names), components='none',
+                    shell='none', mirrors='none', wsl='none', wsl_profile='none')
+    if path.parent.resolve() == (ROOT / 'workflow/profiles').resolve():
+        raise WorkflowRuleError('Legacy profiles must migrate to schema_version=3 and software selection')
     schema = {key: (pattern, required) for key, pattern, required in profile_fields()}
     values: dict[str, str] = {}
     for line in path.read_text(encoding='utf-8-sig').splitlines():

@@ -84,8 +84,8 @@ def read_items(directory: Path, platform: str) -> list[ApplyItem]:
                 raise ApplyConfigError('Unix requires home or config_home')
             if name == 'windows' and (item.target_root not in ('home', 'app_data', 'local_app_data') or item.method != 'copy'):
                 raise ApplyConfigError('Windows requires home, app_data or local_app_data and copy')
-            if item.renderer and (name != 'unix' or item.condition != 'linux-kde' or item.method != 'hardlink' or item.target_root != 'config_home'):
-                raise ApplyConfigError('desktop-fonts requires Unix linux-kde hardlink')
+            if item.renderer:
+                raise ApplyConfigError('Configuration rendering was removed; capture real files')
             if name == 'windows' and item.condition:
                 raise ApplyConfigError('Conditions are Unix-only')
             if name == platform:

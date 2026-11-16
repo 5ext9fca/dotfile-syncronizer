@@ -11,7 +11,7 @@ install_run() { shift; printf 'COMMAND';printf ' <%s>' "$@";printf '\n'; }
 # shellcheck disable=SC2034
 packages=wrong selected_source=wrong item=wrong package_manager=wrong dry_run=0
 for platform in linux.apt linux.dnf linux.pacman macos; do
-  plan="$(install_items_plan "$repo_root/install/items" "$platform" 1 0 0)"
+  plan="$(install_items_plan "$repo_root/software/items" "$platform" 1 0 0)"
   distro=;codename=
   case "$platform" in linux.apt) distro=debian;codename=trixie ;; linux.dnf) distro=fedora ;; esac
   while IFS= read -r record; do
@@ -40,7 +40,7 @@ grep -Fq 'https://mirrors.ustc.edu.cn/misc/brew-install.sh' "$test_tmp/macos"
 plan="$(install_items_plan "$repo_root/tests/fixtures/install/pacman" linux.pacman 0 0 0)"
 install_dispatch pacman "$plan" 'linux.pacman|1|||' > "$test_tmp/custom"
 grep -Fq '<extra/tool>' "$test_tmp/custom"
-plan="$(install_items_plan "$repo_root/install/items" linux.apt 0 0 0)"
+plan="$(install_items_plan "$repo_root/software/items" linux.apt 0 0 0)"
 while IFS= read -r record; do
   if [[ "$(install_field "$record" id)" == starship ]]; then
     install_dispatch cargo "$record" 'linux.apt|1|||' > "$test_tmp/cargo"

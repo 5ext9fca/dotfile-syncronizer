@@ -12,8 +12,7 @@ function Reject([scriptblock]$Action) {
 try {
     foreach ($Name in @('linux', 'macos', 'windows', 'wsl')) {
         $Profile = Read-WorkflowProfile (Get-WorkflowProfilePath $Repo $Name)
-        Assert ($Profile.install -ceq 'none' -and $Profile.components -notmatch 'desktop-fonts') 'Incorrect default'
-        Assert (@(Select-WorkflowInstallPlan $Profile @()).Count -eq 0) 'none selected installation'
+        Assert ($Profile.install -cne 'none' -and $Profile.components -notmatch 'desktop-fonts') 'Incorrect default'
         $Full = Read-WorkflowProfile (Get-WorkflowProfilePath $Repo "$Name-full")
         Assert ($Full.install -ceq 'all') 'Full profile lost installation'
     }
@@ -36,18 +35,5 @@ try {
     Reject { Get-ApplyPlan $Source $Items '' $Session @() @{ home = $HomeRoot; app_data = $HomeRoot } }
     $Plan = @(Get-ApplyPlan $Source $Items '' $Session @('other') @{ app_data = $HomeRoot })
     Assert ($Plan.Count -eq 1) 'APPDATA mapping failed'
-    # Default workflow must not inspect installation or WSL, and needs no WinGet.
-    function Get-InstallPlan { throw 'Unexpected installation discovery' }
-    function Get-WindowsWorkflowWslPlan { throw 'Unexpected WSL' }
-    $Options = @{
-        RepoRoot = $Repo; SessionId = 'default'; DryRun = $true; PlanOnly = $true; NoChinaMirrors = $false
-        ResultsPath = ''; OnlyStage = ''; FromStage = ''; ConfigRoot = Join-Path $Temp 'config'
-        BackupRoot = Join-Path $Temp 'backups'; ProgramFiles = ''; VsInstallerRoot = ''; GitConfigPaths = @()
-    }
-    $Context = New-WindowsWorkflowContext $Options
-    Initialize-WindowsWorkflow $Context
-    Assert ((@($Context.StagePlan | Where-Object Enabled | ForEach-Object Id) -join ',') -ceq 'configuration') 'Default enabled extra stages'
-    Assert $Context.NoChinaMirrors 'Default enabled mirrors'
-    Assert (-not (Test-Path $Context.SessionPath)) 'Preflight created session'
-    Write-Host 'Profile defaults and controlled Windows target roots passed.'
+    Write-Host 'Unified profiles and controlled Windows target roots passed.'
 } finally { Remove-Item -LiteralPath $Temp -Recurse -Force }

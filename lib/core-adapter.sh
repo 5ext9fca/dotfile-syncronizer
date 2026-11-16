@@ -58,7 +58,7 @@ case "$operation" in
       *) exit 65 ;;
     esac ;;
   workflow-query)
-    if [[ "$first" == pacman-packages ]];then
+    if [[ "$first" == pacman-packages || "$first" == brew-prefix ]];then
       # shellcheck source=command.sh
       source "$adapter_library_dir/command.sh"
       # shellcheck source=install-policy.sh
@@ -76,14 +76,6 @@ case "$operation" in
     code=$?
     set -e
     printf '%s' "$code" > "$payload_path" ;;
-  apply-render)
-    # Candidate files belong to caller-owned scratch, never deployment targets.
-    # shellcheck source=command.sh
-    source "$adapter_library_dir/command.sh"
-    command_run probe 0 30 '' -- "$DOTFILES_PYTHON" -X utf8 -B "$adapter_library_dir/../apply/renderers/desktop-fonts.py" "$first" "$second" "$mode" "$extra"
-    permissions=644
-    [[ ! -f "$second" ]] || permissions="$(stat -c '%a' "$second")"
-    chmod "$permissions" "$mode" ;;
   apply-query)
     # shellcheck source=apply-fs.sh
     source "$adapter_library_dir/apply-fs.sh"
@@ -123,18 +115,6 @@ case "$operation" in
         done > "$payload_path" ;;
       equal-copy) if cmp -s "$second" "$mode";then printf 1;else printf 0;fi > "$payload_path" ;;
       equal-hardlink) if [[ "$second" -ef "$mode" ]];then printf 1;else printf 0;fi > "$payload_path" ;;
-      desktop-supported)
-        # shellcheck source=desktop-fonts.sh
-        source "$adapter_library_dir/desktop-fonts.sh"
-        if desktop_fonts_supported;then printf 1;else printf 0;fi > "$payload_path" ;;
-      desktop-required)
-        # shellcheck source=command.sh
-        source "$adapter_library_dir/command.sh"
-        command_capture 30 "$DOTFILES_PYTHON" -X utf8 -B "$adapter_library_dir/../apply/renderers/desktop-fonts.py" --families "$second" > "$payload_path" ;;
-      desktop-families)
-        # shellcheck source=command.sh
-        source "$adapter_library_dir/command.sh"
-        if command -v fc-list >/dev/null;then command_capture 30 fc-list --format '%{family}\n' > "$payload_path";fi ;;
       *) exit 65 ;;
     esac ;;
   publish-report)

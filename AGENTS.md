@@ -6,9 +6,9 @@ Conduct all conversational interaction with the user in Chinese. Write explanati
 
 ## Project Scope and Boundaries
 
-This project is a manually launched, repeatable unattended installer and configuration manager. Each invocation is one run. Installation checks current presence before deciding whether to skip; otherwise success means the installation command exits with a code accepted by the execution policy. Do not add post-install existence verification. A run may fail; the operator may resolve the cause and restart it manually. The current reliability boundaries are sufficient. Evaluate future changes against this operating model rather than expanding it into a continuously running orchestration or supervision system.
+This project is a manually launched software/configuration snapshot collector and same-platform installer/restorer. Each invocation is one run. Installation checks current presence before deciding whether to skip; otherwise success means the installation command exits with a code accepted by the execution policy. Do not add post-install existence verification. A run may fail; the operator may resolve the cause and restart it manually. The current reliability boundaries are sufficient. Evaluate future changes against this operating model rather than expanding it into a continuously running orchestration or supervision system.
 
-- Keep installation, configuration deployment, non-mutating preflight, clear failure reporting, and manual reruns within scope.
+- Keep explicit configuration capture into independent ZIP snapshots, same-platform installation/restoration, non-mutating preflight, clear failure reporting, and manual reruns within scope. Snapshots preserve selected declarations and file content, not installed software versions. Require identical installation branch, CPU architecture and native/WSL environment; operate Windows and WSL separately.
 - Checkpoint/resume support may be extended to help a manually restarted run continue from recorded progress. Revalidate current state before continuing; do not imply exactly-once execution, immutable plan replay, or automatic crash recovery.
 - Do not expand environment reproducibility, version locking, or durable plan replay guarantees.
 - Do not expand rollback coverage or transaction guarantees across installation and configuration stages.
@@ -18,14 +18,15 @@ This project is a manually launched, repeatable unattended installer and configu
 
 ## Project Structure & Module Organization
 
-Keep managed application source files under `configs/`: `configs/fish/`, `configs/helix/`, `configs/wezterm/`, `configs/zellij/`, `configs/git/`, `configs/fontconfig/`, and `configs/windows-terminal/`. `configs/` contains application payloads, not installer control declarations or an automatic mirror of the target config tree; deployment remains explicit in `apply/items/`. Fish startup fragments use numeric prefixes under `configs/fish/conf.d/`. Unix repository payloads use file-level hard links; rendered KDE/GTK font settings and Windows Terminal are copied.
+Maintain software and configuration path declarations together in `software/items/<id>.toml`. Do not maintain application configuration payloads in this repository. Capture recursively from declared directories or single files into a ZIP snapshot, with explicit exclusions; missing paths and unexcluded links fail the capture. Restore independent copies with backups and preserve extra destination files.
 
-- `install/items/` declares per-platform installation order, mechanism, sources, dependencies and environment ownership. Shared rules live in `install/schema/`; handlers receive explicit item/context arguments. Keep execution timeout and success-code policy in `install/schema/execution.tsv`.
-- `apply/items/` and `apply/schema/` declare file mappings and exclusions. `apply/handlers/` owns explicit file operations and guarded recovery.
-- `workflow/profiles/` selects installation items and configuration associations; `workflow/schema/stages.tsv` defines stage order/gates. Keep CLI parsing and host detection in entry points; use `lib/workflow-unix.sh` and `lib/workflow-windows.ps1` for platform actions.
+- `dotfiles_core/software.py` validates unified declarations and dependency selection; `snapshot.py` owns the versioned snapshot model and archive validation; `snapshot_entry.py` coordinates native installation and file operations.
+- `install/schema/` retains installation mechanism, source and execution policy. Native handlers receive explicit item/context arguments. Keep timeout and success-code policy in `install/schema/execution.tsv`.
+- `apply/handlers/` owns complete file transactions and guarded recovery, including old journals. New configuration application requires a snapshot; no repository payload rendering or hard links.
+- `workflow/profiles/` selects software IDs with schema_version=3. Ordinary installation runs packages only. Snapshot restore runs installation then configuration; mirror management stays explicitly separate. Do not change login shells or orchestrate WSL implicitly.
 - `dotfiles_core/` owns shared parsing, normalization, selection, planning, preflight, execution coordination, mirror rules and report serialization. Native `lib/` adapters own observations, commands, complete file transactions, journals, recovery, deployment leases, atomic publication, terminal input, logs, timeout and cancellation.
-- `dotfiles_core/workflow_session.py` owns reports and session lifetime. Manual resume uses versioned session requests and current installation probes; never skip an item solely because an older report says it succeeded.
-- `lib/mirrors.sh` is a thin native interface; `dotfiles_core/mirror_planning.py` and `mirror_rules.py` own coordination, target ownership and text rendering. Installation exports download settings and later initializes persistent mirrors; standalone apply reconciles current managed settings. Change `mirrors/current.conf`, not historical ownership data in `legacy.conf`.
+- `dotfiles_core/workflow_session.py` owns reports and session lifetime. Ordinary installation resume uses request v3 and current probes; old v2 requests are view-only, and snapshot restoration is restarted with its archive; never skip an item solely because an older report says it succeeded.
+- `lib/mirrors.sh` is a thin native interface; `dotfiles_core/mirror_planning.py` and `mirror_rules.py` own coordination, target ownership and text rendering. Installation exports explicitly selected download settings; standalone mirrors reconciles current managed settings. Change `mirrors/current.conf`, not historical ownership data in `legacy.conf`.
 - `contracts/schema/` defines shared versioned plans/detail reports. Workflow summary fields and outcomes live in `workflow/schema/`. Native commands use `lib/command.sh` / `.ps1` for explicit policy, argument arrays, timeout and cancellation.
 
 Runtime ownership uses `environments`, `provides`, and `wsl_provider`; capabilities describe installation ownership only. Snapshot reports use atomic publication. Mutating workflows/apply/restore share a deployment lease; preserve nested ownership and never reclaim unclean-exit leases automatically.
@@ -38,39 +39,9 @@ Keep operator commands in module READMEs and configuration-generation procedures
 
 ## Build, Test, and Development Commands
 
-There is no build step. Prepare Python >=3.15 in the checkout platform `.venv` or set `DOTFILES_PYTHON`; validate only with Python 3.15. Do not search alternative environments or replace the running interpreter. Windows and WSL select their runtimes independently. The shared check manifest is `tests/checks/manifest.tsv`; run `./tests/check.sh --strict` on Unix or `./tests/check.ps1 -Strict` on Windows. Suites are `core`, `cross`, `dry-run`, `lint`, and `all`; strict mode fails missing runtimes for eligible checks, while unsupported hosts are explicitly skipped. See `tests/README.md`. Installer contract tests share fixtures under `tests/fixtures/install/`: run `bash tests/install-items.sh`, `bash tests/install-handlers.sh`, `bash tests/install-entry.sh` (Linux only), `bash tests/workflow.sh`, and the corresponding PowerShell tests (`tests/install-items.ps1`, `tests/install-parity.ps1`, `tests/workflow.ps1`) when available. Schema rules live in `install/schema/`; mechanism handlers in `install/handlers/` receive explicit item/context arguments. Keep the Bash 3.2 and PowerShell 5.1 contracts aligned. Apply configuration lives in `apply/items/` and `apply/schema/`, with explicit file-operation handlers under `apply/handlers/`. Run `bash tests/apply-schema.sh`, `bash tests/apply.sh`, `bash tests/mirrors.sh`, plus `tests/apply-schema.ps1` and `tests/apply.ps1` when PowerShell is available. Keep preflight non-mutating, preserve unknown configurations and backups, and test both automatic rollback and guarded explicit recovery. Validate changes with the platform installer's non-mutating mode:
+There is no build step. Prepare Python >=3.15 in the checkout platform `.venv` or set `DOTFILES_PYTHON`; validate only with Python 3.15. Do not search alternative environments or replace the running interpreter. Windows and WSL select their runtimes independently. The shared check manifest is `tests/checks/manifest.tsv`; run `./tests/check.sh --strict` on Unix or `./tests/check.ps1 -Strict` on Windows. Suites are `core`, `cross`, `dry-run`, `lint`, and `all`; strict mode fails missing runtimes for eligible checks, while unsupported hosts are explicitly skipped. See `tests/README.md`. Installer contract tests share fixtures under `tests/fixtures/install/`: run `bash tests/install-items.sh`, `bash tests/install-handlers.sh`, `bash tests/install-entry.sh` (Linux only), `bash tests/workflow.sh`, and the corresponding PowerShell tests (`tests/install-items.ps1`, `tests/install-parity.ps1`, `tests/workflow.ps1`) when available. Schema rules live in `install/schema/`; mechanism handlers in `install/handlers/` receive explicit item/context arguments. Keep the Bash 3.2 and PowerShell 5.1 contracts aligned. Run `bash tests/apply-schema.sh`, `bash tests/apply.sh`, `bash tests/mirrors.sh`, and corresponding PowerShell checks where available. Snapshot tests live in `tests/core/test_snapshot.py` and exercise temporary configuration trees, public entry points, archives, copy/backup/idempotence and guarded recovery. Never capture real operator configuration in test artifacts.
 
-- `./install/macos.sh --dry-run` checks the default configuration workflow; add `--profile macos-full` to preview the complete environment.
-- `./install/linux.sh --dry-run` detects the available package manager and prompts for confirmation.
-- `./install/linux.sh --dry-run --yes` is suitable for non-interactive Linux validation.
-- `./install/linux.sh --profile linux-full --dry-run --yes --no-china-mirrors` validates the complete upstream-source plan; omit `--no-china-mirrors` to validate the full mirror plan.
-- `.\install\windows.ps1 -DryRun` validates the default Windows configuration workflow; add `-Profile windows-full` for the complete Windows/WSL workflow from PowerShell.
-
-The Linux installer supports Pacman, APT, and DNF systems and selects its branch from the package manager present on the host rather than from the distribution name. When available, run `shellcheck lib/*.sh install/*.sh apply/*.sh` for Bash changes, and `bash -n` as a quick syntax check. Parse configuration with its owning tool, such as `fish -n configs/fish/config.fish`, `wezterm ls-fonts`, or `hx --health`.
-
-### Running Windows checks from WSL
-
-When working inside WSL, invoke the Windows scripts with `powershell.exe` and
-pass a Windows-form path resolved by `wslpath` in the WSL shell:
-
-```bash
-windows_apply_path="$(wslpath -w "$PWD/apply/windows.ps1")"
-windows_install_path="$(wslpath -w "$PWD/install/windows.ps1")"
-
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$windows_apply_path" -DryRun
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$windows_install_path" -DryRun
-```
-
-Resolve paths before starting PowerShell: `wslpath` is a Linux executable and
-is not available as a PowerShell cmdlet. Repositories stored in WSL are passed
-to Windows PowerShell as `\\wsl.localhost\<distribution>\...` UNC paths. The
-checkout for the full workflow (or any selection including the WSL stage) must live inside the distribution selected by the profile (`FedoraLinux-44` for `windows-full`), since its
-configuration is hard-linked into that WSL home; a Windows-drive or
-other-distribution checkout is rejected before any host changes are made. Use
-`-DryRun` for validation so the Windows Terminal settings and existing backups
-are not modified. The default Windows profile does not inspect WSL. A successful explicit full installer dry run should validate the
-Windows configuration, detect the selected WSL2 distribution, and invoke
-the Linux installer in its non-mutating mode.
+Validate installation edits with the host's non-mutating mode (`./install/macos.sh --dry-run`, `./install/linux.sh --dry-run --yes`, or `.\install\windows.ps1 -DryRun`); add the matching `*-full` profile for the complete software set. Windows and WSL run separately. Run ShellCheck when available and Bash syntax checks for shell edits. Do not claim unavailable native platform checks passed.
 
 ## Coding Style & Naming Conventions
 
@@ -78,7 +49,7 @@ Preserve each format's native conventions: two-space indentation for Lua, four s
 
 ## Testing Guidelines
 
-Treat dry runs as the minimum regression check for installer edits. Test only on the relevant operating system, and verify that repeated runs are idempotent: existing correct links should remain untouched, while conflicting files should be backed up. When changing mirror logic, extend an existing user config file such as `~/.cargo/config.toml` or `~/.npmrc` and confirm the installer leaves unknown files unchanged. For configuration edits, launch or parse the affected application and record the validation performed.
+Treat dry runs as the minimum regression check for installer edits. Test only on the relevant operating system, and verify that repeated runs are idempotent: existing correct configuration copies should remain untouched, while conflicting files should be backed up. When changing mirror logic, extend an existing user config file such as `~/.cargo/config.toml` or `~/.npmrc` and confirm the installer leaves unknown files unchanged. For declaration edits, validate all platform graphs and use isolated capture/restore fixtures; application content belongs to snapshots.
 
 ## Documentation Review
 

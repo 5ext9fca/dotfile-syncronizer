@@ -21,7 +21,7 @@ $Count = 0
 foreach ($Case in Get-Content -LiteralPath (Join-Path $Fixtures 'stages/cases.tsv')) {
     $Name, $Platform, $Profile, $Only, $From, $Mirrors, $Registry, $Expected = $Case.Split("`t")
     if ($Only -eq '-') { $Only = '' }; if ($From -eq '-') { $From = '' }
-    $Registry = if ($Registry -eq '-') { Join-Path $RepoRoot 'workflow/schema/stages.tsv' } else { Join-Path $Fixtures "stages/$Registry" }
+    $Registry = if ($Registry -eq '-') { Join-Path $Fixtures 'stages/legacy.tsv' } else { Join-Path $Fixtures "stages/$Registry" }
     $ProfileData = Read-WorkflowProfile (Join-Path $Fixtures "stages/$Profile.conf")
     $Actual = @(); $Failed = $false
     try { $Actual = @(ConvertTo-WorkflowStagePlanText @(Get-WorkflowStagePlan $Platform $ProfileData $Only $From ($Mirrors -eq '1') $Registry)) }

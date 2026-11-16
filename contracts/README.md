@@ -64,4 +64,8 @@ Bash capture 目录包含 stdout、stderr 和 command.result；PowerShell 返回
 
 新增字段或版本时同时检查两端 reader/writer、消费者和共享夹具；不要只改 Markdown 或单个输出点。配置生成任务通常不需要修改 contracts。原子发布只保证单文件快照，不保证多份报告同时更新或断电落盘。完整边界见 [架构文档](../docs/architecture.md)。
 
-核心/原生临时 JSON 协议版本独立于持久数据契约。其请求只在当前调用中有效；不是保存计划、重放或迁移会话格式。安装计划仍为 v7，人工续跑请求仍为 v2。
+核心/原生临时 JSON 协议版本独立于持久数据契约。其请求只在当前调用中有效；不是保存计划、重放或迁移会话格式。安装计划仍为 v7，普通安装续跑请求为 v3，v2 仅可查看。
+
+## 配置快照
+
+ZIP manifest v1 由 `dotfiles_core/snapshot.py` 定义，独立于上述执行计划和报告。保存软件声明副本、平台及配置内容摘要；详见 [快照](../snapshot/README.md)。普通安装 request v3 支持续跑，v2 仅可查看。快照会话必须使用原归档重新 restore，不能交给安装入口 resume。

@@ -21,12 +21,12 @@ usage() {
   cat <<'EOF'
 Usage: ./install/macos.sh [--profile NAME] [--dry-run|--plan] [--results FILE] [--china-mirrors|--no-china-mirrors]
 
-Stages: --only-stage NAME or --from-stage NAME (packages, configuration, mirrors, shell).
+Stages: --only-stage NAME or --from-stage NAME (packages).
 --resume SESSION continues a failed session with its saved stage selection and mirror mode.
 --results FILE writes the workflow summary; component reports live in the session directory.
 
-The platform default profile deploys application configuration only.
-Select --profile PLATFORM-full explicitly for installation, mirrors and Fish.
+Profiles select software IDs for installation only.
+Configuration migration uses snapshot/snapshot.sh; mirrors and shell are not initialized.
 --china-mirrors / --no-china-mirrors override the selected profile.
 Profiles are read only from workflow/profiles/NAME.conf.
 EOF

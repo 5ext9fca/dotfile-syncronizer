@@ -21,7 +21,7 @@ while IFS=$'\t' read -r name platform mirrors wsl outcome; do
   count=$((count+1))
 done < "$fixture_root/cases.tsv"
 for platform in linux.apt linux.dnf linux.pacman macos windows; do
-  install_items_plan "$repo_root/install/items" "$platform" 1 0 0 > "$test_tmp/$platform.plan"
+  install_items_plan "$repo_root/software/items" "$platform" 1 0 0 > "$test_tmp/$platform.plan"
   [[ -s "$test_tmp/$platform.plan" ]]
 done
 # Plan/execution use the same resolved URL; execution does not inspect again.

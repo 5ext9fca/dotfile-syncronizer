@@ -76,4 +76,4 @@ class InstallConfigurationTests(unittest.TestCase):
     def test_repository_all_platforms(self):
         for platform in ('linux.apt', 'linux.dnf', 'linux.pacman', 'macos', 'windows'):
             with self.subTest(platform=platform):
-                self.assertTrue(read_items(ROOT / 'install/items', platform))
+                self.assertTrue(read_items(ROOT / 'software/items', platform))

@@ -6,7 +6,7 @@ from dotfiles_core.errors import ProtocolError
 
 QUERIES = {
     'unix': {'command-present': 1, 'executable': 1, 'package-manager': 0,
-             'shell-account': 2, 'fish-path': 2, 'pacman-packages': 0},
+             'shell-account': 2, 'fish-path': 2, 'pacman-packages': 0, 'brew-prefix': 1},
     'windows': {'command-present': 1, 'git-path': 1, 'git-probe': 2, 'wsl-plan': 0},
 }
 

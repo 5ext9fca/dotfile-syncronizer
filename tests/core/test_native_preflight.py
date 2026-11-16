@@ -39,7 +39,7 @@ class NativePreflightTests(unittest.TestCase):
             factory.return_value.plan.return_value = items
             self.assertEqual(self.native.installation(self.inputs, {'install': 'tool'}, '/session', 'resume'), items)
         self.assertEqual(factory.call_args.args, ('unix', '/native-shell', 'macos|1|/brew|/prefix|/session/packages-backups|||'))
-        factory.return_value.plan.assert_called_once_with(str(ROOT / 'install/items'), 'macos', False, False, 'tool', 'resume')
+        factory.return_value.plan.assert_called_once_with(str(ROOT / 'software/items'), 'macos', False, False, 'tool', 'resume')
 
     def test_planning_scratch_is_temporary_and_uses_preview(self):
         observed = []

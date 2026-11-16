@@ -21,7 +21,7 @@ class WorkflowRuleTests(unittest.TestCase):
         root = ROOT / 'tests/fixtures/workflow/stages'
         for name, platform, profile, only, start, mirrors, registry, outcome in rows(root / 'cases.tsv'):
             with self.subTest(name=name):
-                path = ROOT / 'workflow/schema/stages.tsv' if registry == '-' else root / registry
+                path = root / 'legacy.tsv' if registry == '-' else root / registry
                 arguments = (platform, read_profile(root / f'{profile}.conf'), '' if only == '-' else only,
                              '' if start == '-' else start, mirrors == '1', path)
                 if outcome == 'invalid':

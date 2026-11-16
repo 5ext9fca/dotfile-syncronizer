@@ -111,6 +111,11 @@ def prepare(inputs: Inputs, operations: Operations, paths: Paths) -> Prepared:
         inputs = replace(inputs, profile=saved['profile'], resume_session=saved['session'], mirrors=saved['china_mirrors'] == '1')
         remaining = tuple(saved['resume_stages'])
     profile = read_profile(Path(inputs.repo) / 'workflow/profiles' / (inputs.profile + '.conf'))
+    if profile['schema_version'] == '3':
+        from dotfiles_core.software import read_catalog, installation_roots
+        catalog = read_catalog(Path(inputs.repo) / 'software/items')
+        ids = installation_roots(catalog, inputs.platform, 'wsl' if inputs.native.get('inside_wsl') else 'native', profile['install'].split())
+        profile['install'] = ' '.join(ids) or 'none'
     if inputs.style == 'unix' and profile['wsl'] != 'none':
         raise PreflightError('Unix profiles require wsl=none')
     if inputs.style == 'windows' and profile['shell'] != 'none':
@@ -124,7 +129,7 @@ def prepare(inputs: Inputs, operations: Operations, paths: Paths) -> Prepared:
     session = paths.join(inputs.backup, 'workflow-' + inputs.session_id)
     installation = (operations.installation(inputs, profile, session, 'resume' if remaining else 'normal')
                     if profile['install'] != 'none' else [])
-    definitions = read_items(Path(inputs.repo) / 'apply/items', inputs.style)
+    definitions = [] if profile['schema_version'] == '3' else read_items(Path(inputs.repo) / 'apply/items', inputs.style)
     available = [item.id for item in definitions]
     selection = components(profile['components'], installation, available)
     enabled = [stage for stage in stages if stage.Enabled]

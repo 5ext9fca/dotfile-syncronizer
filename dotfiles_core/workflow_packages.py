@@ -124,7 +124,7 @@ def request(operation: str, context: dict) -> tuple[object, list[str]]:
     runner = native_installation(style, shell, install_context)
 
     def refresh() -> list[dict]:
-        items = runner.plan(str(Path(repo) / 'install/items'), platform, mirrors, wsl,
+        items = runner.plan(str(Path(repo) / 'software/items'), platform, mirrors, wsl,
                             profile['install'], 'resume' if resumed else 'normal')
         if directory is not None:
             schema = Contract.load('install-plan')

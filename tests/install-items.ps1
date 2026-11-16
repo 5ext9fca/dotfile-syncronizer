@@ -31,7 +31,7 @@ try {
         $Count++
     }
     foreach ($Platform in @('linux.apt', 'linux.dnf', 'linux.pacman', 'macos', 'windows')) {
-        $Plan = @(Get-InstallPlan -Directory (Join-Path $RepoRoot 'install/items') -Platform $Platform -Inspect $false)
+        $Plan = @(Get-InstallPlan -Directory (Join-Path $RepoRoot 'software/items') -Platform $Platform -Inspect $false)
         Assert-True ($Plan.Count -gt 0) "Empty repository plan: $Platform"
     }
     # Freeze a presence decision into a plan, then change the probe. Execution
@@ -68,7 +68,7 @@ try {
     Assert-True $Failed 'A failed probe was treated as an absent installation'
     New-Item -ItemType Directory -Path (Join-Path $TestTemp 'Git/cmd') -Force | Out-Null
     New-Item -ItemType File -Path (Join-Path $TestTemp 'Git/cmd/git.exe') | Out-Null
-    $Git = @(Read-InstallItems (Join-Path $RepoRoot 'install/items') windows | Where-Object { $_.id -eq 'git' })[0]
+    $Git = @(Read-InstallItems (Join-Path $RepoRoot 'software/items') windows | Where-Object { $_.id -eq 'git' })[0]
     Assert-True ((Get-WindowsItemState -Item $Git -Context $ProbeContext) -like 'discovered:*') 'Declared Git discovery path was ignored'
 
     # Actual WinGet/MSVC handlers with a recording command adapter, no host writes.

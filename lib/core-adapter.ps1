@@ -80,13 +80,9 @@ try {
             identity { Get-ApplyIdentity $Path }
             equal-copy { [string][int]((Get-ApplyContent $Path) -eq (Get-ApplyContent $Other)) }
             equal-hardlink { [string][int]((Get-ApplyIdentity $Path) -eq (Get-ApplyIdentity $Other)) }
-            desktop-supported { '0' }
-            desktop-families { '' }
             default { throw 'Unsupported native apply query' }
         }
         [IO.File]::WriteAllText($PayloadPath, [string]$Payload, [Text.UTF8Encoding]::new($false))
-    } elseif ($Request.operation -ceq 'apply-render') {
-        throw 'Desktop rendering is Unix-only'
     } elseif ($Request.operation -ceq 'publish-report') {
         . (Join-Path $PSScriptRoot 'atomic-report.ps1')
         Write-AtomicReport $Request.context.path $Request.context.text -CreateNew:($Request.context.mode -ceq 'create')

@@ -46,7 +46,7 @@ function Show-WindowsWorkflowPlan {
         if (-not $Stage.Enabled) { Write-Output "Stage $($Stage.Id): skipped ($($Stage.Reason))"; continue }
         Write-Output "Stage $($Stage.Id):"
         switch -CaseSensitive ($Stage.Action) {
-            'packages' { Show-InstallPlanExplanation $Context.InstallPlan windows $Context.Profile.install (Join-Path $Context.RepoRoot 'install/items'); ConvertTo-InstallPlanText -Plan $Context.InstallPlan -Envelope }
+            'packages' { Show-InstallPlanExplanation $Context.InstallPlan windows $Context.Profile.install (Join-Path $Context.RepoRoot 'software/items'); ConvertTo-InstallPlanText -Plan $Context.InstallPlan -Envelope }
             'git' { foreach ($Setting in $Context.GitSettings) { Write-Output "Set global Git $($Setting.Key)=$($Setting.Value); recheck executable after packages." } }
             'configuration' { Show-ApplyPlanExplanation $Context.ApplyPlan; ConvertTo-ApplyPlanText $Context.ApplyPlan }
             'wsl' { $Context.WslPlan.Text }

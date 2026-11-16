@@ -5,6 +5,7 @@ workflow_native_query() {
   case "$query" in
     command-present) if command -v "$first" >/dev/null 2>&1;then printf 1;else printf 0;fi ;;
     executable) if [[ -x "$first" ]];then printf 1;else printf 0;fi ;;
+    brew-prefix) install_probe_capture brew "$first" --prefix ;;
     pacman-packages) install_probe_capture pacman pacman -Qq ;;
     package-manager)
       if command -v pacman >/dev/null 2>&1;then printf pacman

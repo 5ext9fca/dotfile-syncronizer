@@ -1,6 +1,7 @@
 """Private request/result files for native compatibility adapters."""
 from pathlib import Path
 import os
+import zipfile
 
 from dotfiles_core.errors import CoreError, ProtocolError, AdapterError
 from dotfiles_core.protocol import Request, Result, write_json, exit_codes_match
@@ -38,8 +39,11 @@ def run(request_path: Path, result_path: Path) -> int:
     from dotfiles_core.apply_entry import OPERATIONS as APPLY_ENTRY_OPERATIONS, request as apply_entry_request
     from dotfiles_core.workflow_shell import OPERATIONS as SHELL_OPERATIONS, request as shell_request
     from dotfiles_core.plan_explain import OPERATIONS as EXPLAIN_OPERATIONS, request as explain_request
+    from dotfiles_core.snapshot_entry import OPERATIONS as SNAPSHOT_OPERATIONS, request as snapshot_request
     try:
-        if request.operation in EXPLAIN_OPERATIONS:
+        if request.operation in SNAPSHOT_OPERATIONS:
+            value, lines = snapshot_request(request.operation, request.context)
+        elif request.operation in EXPLAIN_OPERATIONS:
             value, lines = explain_request(request.operation, request.context)
         elif request.operation in SHELL_OPERATIONS:
             value, lines = shell_request(request.operation, request.context)
@@ -72,7 +76,7 @@ def run(request_path: Path, result_path: Path) -> int:
         else:
             raise ProtocolError(f'Unsupported core request: {request.operation}')
         result = Result(request.operation, 0, {'value': value, 'lines': lines})
-    except (CoreError, OSError, UnicodeError, KeyError, TypeError, ValueError) as exc:
+    except (CoreError, OSError, UnicodeError, KeyError, TypeError, ValueError, zipfile.BadZipFile, NotImplementedError) as exc:
         result = Result(request.operation, getattr(exc, 'exit_code', 1), {'error': str(exc)})
     write_json(result_path, result.document())
     return result.exit_code

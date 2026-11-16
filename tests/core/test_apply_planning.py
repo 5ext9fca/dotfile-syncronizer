@@ -1,6 +1,6 @@
 import unittest
 
-from dotfiles_core.apply_planning import Entry, Paths, Planner, desktop_fonts
+from dotfiles_core.apply_planning import Entry, Paths, Planner
 from dotfiles_core.apply_rules import ApplyItem, ApplyConfigError
 
 
@@ -36,25 +36,6 @@ class Observations:
 
 
 class ApplyPlanningTests(unittest.TestCase):
-    def test_desktop_candidates_require_fonts_and_guard_current_settings(self):
-        fs = Observations()
-        planner = Planner(fs, '/backup')
-        rendered, messages = [], []
-        def render(kind, target, candidate):
-            rendered.append(kind)
-            fs.entries[candidate] = Entry('file', True)
-            fs.states[candidate] = '1:20:f:rendered'
-        with self.assertRaisesRegex(ApplyConfigError, 'fonts are missing'):
-            desktop_fonts(planner, 'fonts', '/config', '/scratch', False, '', render, messages.append, ['Sample Sans'])
-        self.assertEqual(rendered, [])
-        desktop_fonts(planner, 'fonts', '/config', '/scratch', True, '', render, messages.append, ['Sample Sans'])
-        self.assertEqual(rendered, ['kdeglobals', 'gtk-3.0/settings.ini', 'gtk-4.0/settings.ini'])
-        self.assertEqual([row['action'] for row in planner.rows], ['copy', 'mkdir', 'copy', 'mkdir', 'copy'])
-        def changed(kind, target, candidate):
-            fs.states[target] = 'user-edit'
-        with self.assertRaisesRegex(ApplyConfigError, 'changed during rendering'):
-            desktop_fonts(Planner(fs, '/backup'), 'fonts', '/config', '/scratch', True, '', changed, messages.append, ['Sample Sans'])
-
     def test_conflicting_parent_is_backed_up_once_and_children_are_virtual(self):
         fs = Observations()
         fs.entries['/config/tool'] = Entry('link')

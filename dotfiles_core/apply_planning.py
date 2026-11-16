@@ -214,35 +214,3 @@ class Planner:
                     raise ApplyConfigError('Renderer requires caller-owned scratch')
                 render(item, self)
         return self.rows
-
-
-def desktop_fonts(planner: Planner, component: str, config: str, scratch: str, preview: bool,
-                  families: str, render: Callable[[str, str, str], None],
-                  emit: Callable[[str], None], required: Sequence[str]) -> None:
-    """Coordinate candidate rendering; each actual settings file stays untouched."""
-    if not scratch:
-        raise ApplyConfigError('desktop-fonts requires caller-owned scratch')
-    available = {family for line in families.splitlines() for family in line.split(',')}
-    missing = [name for name in required if name not in available]
-    for family in missing:
-        emit(f'desktop-fonts: missing {family}; install the fonts declared by the selected Fontconfig source before deployment')
-    if missing and not preview:
-        raise ApplyConfigError('Required desktop fonts are missing')
-    root = planner.filesystem.anchor(config)
-    for relative in ('kdeglobals', 'gtk-3.0/settings.ini', 'gtk-4.0/settings.ini'):
-        target = safe(planner.paths.join(config, relative))
-        candidate = planner.paths.join(scratch, 'desktop-' + relative.replace('/', '-'))
-        if planner.paths.overlaps(target, planner.session):
-            raise ApplyConfigError('Desktop font target overlaps backups')
-        parent = target
-        while planner.paths.key(parent) != planner.paths.key(root):
-            if planner.filesystem.entry(parent).kind == 'link':
-                raise ApplyConfigError(f'Desktop font path is a symlink: {parent}')
-            parent = planner.paths.parent(parent)
-        if planner.filesystem.entry(target).kind not in ('absent', 'file'):
-            raise ApplyConfigError('Desktop font target is not a file')
-        before = planner.filesystem.state(target)
-        render(relative, target, candidate)
-        if planner.filesystem.state(target) != before:
-            raise ApplyConfigError(f'Desktop settings changed during rendering: {target}')
-        planner.file(component, 'copy', candidate, target, root)

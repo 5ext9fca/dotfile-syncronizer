@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 import sys
 
-from dotfiles_core.apply_planning import Entry, Paths, Planner, desktop_fonts
+from dotfiles_core.apply_planning import Entry, Paths, Planner
 from dotfiles_core.apply_rules import read_items
 from dotfiles_core.contracts import Contract
 from dotfiles_core.errors import ProtocolError
@@ -51,11 +51,6 @@ class NativeFilesystem:
     def equal(self, source: str, target: str, method: str) -> bool:
         return self.value('equal-' + method, source, target, boolean=True)
 
-    def supported(self, condition: str) -> bool:
-        if condition != 'linux-kde':
-            raise ProtocolError('Unknown apply condition')
-        return self.value('desktop-supported', boolean=True)
-
 
 def native_filesystem(style: str, shell: str) -> NativeFilesystem:
     if not isinstance(shell, str) or not Path(shell).is_absolute() or not Path(shell).is_file():
@@ -66,18 +61,7 @@ def native_filesystem(style: str, shell: str) -> NativeFilesystem:
         command = [shell, '-NoProfile', '-File', str(ROOT / 'lib/core-adapter.ps1')]
     else:
         raise ProtocolError('Unknown apply platform')
-    return NativeFilesystem(Adapter({name: command for name in ('apply-query', 'apply-render')}))
-
-
-def render_fonts(planner: Planner, filesystem: NativeFilesystem, component: str, context: dict, fontconfig: str) -> None:
-    def render(kind: str, target: str, candidate: str) -> None:
-        result = filesystem.adapter.invoke('apply-render', {'kind': kind, 'target': target, 'candidate': candidate, 'fontconfig': fontconfig})
-        if result.data:
-            raise ProtocolError('Malformed native desktop rendering result')
-    desktop_fonts(planner, component, context['config'], context.get('render_scratch', ''),
-                  str(context.get('preview', '0')) == '1', filesystem.value('desktop-families'), render,
-                  lambda message: print(message, file=sys.stderr),
-                  filesystem.value('desktop-required', fontconfig).splitlines())
+    return NativeFilesystem(Adapter({name: command for name in ('apply-query',)}))
 
 
 OPERATIONS = frozenset(('apply-plan-native',))
@@ -110,6 +94,5 @@ def request(operation: str, context: dict) -> tuple[object, list[str]]:
         roots[key] = filesystem.value('resolve-root', value)
     context = {**context, 'config': roots.get('config_home', context['config'])}
     rows = planner.components(read_items(Path(context['items']), style), context['repo'], context['config'],
-                              selection, roots=roots, supported=filesystem.supported,
-                              render=lambda item, current: render_fonts(current, filesystem, item.id, context, planner.paths.join(context['repo'], item.source)))
+                              selection, roots=roots)
     return rows, [schema.row(row) for row in rows]

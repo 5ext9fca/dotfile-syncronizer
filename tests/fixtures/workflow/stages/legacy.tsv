@@ -1,0 +1,9 @@
+# platform	order	id	gate	preflight	action
+unix	10	packages	install	packages	packages
+unix	20	configuration	components	configuration	configuration
+unix	30	mirrors	mirrors	mirrors	mirrors
+unix	40	shell	shell	shell	shell
+windows	10	packages	install	packages	packages
+windows	20	git	install	git	git
+windows	30	configuration	components	configuration	configuration
+windows	40	wsl	wsl	wsl	wsl

@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)] [string]$Platform,
-    [string]$Items = (Join-Path $PSScriptRoot 'items'),
+    [string]$Items = (Join-Path $PSScriptRoot '../software/items'),
     [switch]$NoChinaMirrors,
     [switch]$Explain,
     [switch]$Wsl

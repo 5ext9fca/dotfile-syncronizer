@@ -7,10 +7,10 @@
 | 行为 | 触发位置 | 效果 |
 | --- | --- | --- |
 | prepare | installer packages 阶段 | 为当前安装进程导出下载环境；不在此阶段统一重写系统包源 |
-| initialize | installer mirrors 阶段，或 `apply/mirrors.sh --initialize` | 填充未配置项；已有用户设置按适配器规则保护；可识别官方系统源可转换为当前镜像 |
-| apply | 独立 apply 显式 `--china-mirrors`，或 `apply/mirrors.sh` | 将已识别的旧受管理端点更新到 current，保留未知用户设置 |
+| initialize | 独立 `apply/mirrors.sh --initialize` | 填充未配置项；已有用户设置按适配器规则保护；可识别官方系统源可转换为当前镜像 |
+| apply | 独立 `apply/mirrors.sh` | 将已识别的旧受管理端点更新到 current，保留未知用户设置 |
 
-`--no-china-mirrors` / `-NoChinaMirrors` 跳过安装镜像流程；`apply/apply.sh --no-mirrors` 跳过独立 apply 的镜像。二者都不会删除或撤销已有设置。
+安装入口的 `--china-mirrors` / `-ChinaMirrors` 显式启用下载镜像，默认不启用；快照恢复不隐式初始化持久镜像。跳过镜像不会删除或撤销已有设置。
 
 ## 使用
 
@@ -22,7 +22,7 @@
 ./apply/mirrors.sh --results /existing/directory/mirror-result.tsv
 ```
 
-`DOTFILES_MIRROR_CONFIG` 可为 Unix 入口提供默认配置路径；独立 apply 的显式参数为 `--mirror-config`，mirror 入口为 `--config`。环境变量只描述当前进程，不意味着 Windows host 的声明自动传给 WSL guest。
+`DOTFILES_MIRROR_CONFIG` 可为 Unix 入口提供默认配置路径；独立 mirror 入口的显式参数为 `--config`。环境变量只描述当前进程，不意味着 Windows host 的声明自动传给 WSL guest。
 
 ## 管理目标与保护规则
 

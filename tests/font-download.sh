@@ -43,7 +43,7 @@ observed="$(install_evaluate_record "$record" "$context" normal)"
 plan="$(install_items_plan "$repo_root/tests/fixtures/install/font-download" linux.apt 0 1 0)"
 [[ "$(install_field "$plan" reason)" == environment-not-selected:wsl ]]
 touch "$HOME/.local/share/fonts/JetBrainsMonoNerdFont-Regular.ttf"
-raw="$(install_items_plan "$repo_root/install/items" linux.dnf 0 0 0)"
+raw="$(install_items_plan "$repo_root/software/items" linux.dnf 0 0 0)"
 record="$(printf '%s\n' "$raw" | awk -F '|' '$1=="jetbrains-mono"')"
 observed="$(install_evaluate_record "$record" "$(install_context_make linux.dnf 0 '' '' "$test_tmp/backups")" normal)"
 [[ "$(install_field "$observed" detected_method)" == manual ]]
@@ -54,7 +54,7 @@ output="$(install_font_download "$plan" "$context")"
 [[ "$output" == *'<Sample Sans>'* ]]
 # Defaults contain Noto and never download PingFang, on every native branch.
 for platform in linux.apt linux.dnf linux.pacman;do
-  plan="$(install_items_plan "$repo_root/install/items" "$platform" 0 0 0)"
+  plan="$(install_items_plan "$repo_root/software/items" "$platform" 0 0 0)"
   [[ "$plan" == *'noto-cjk|'* && "$plan" != *'pingfang-sc|'* ]]
 done
 printf 'Declarative font download and default selection tests passed.\n'

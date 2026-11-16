@@ -5,9 +5,9 @@ source "$1/lib/workflow.sh"
 work="$(mktemp -d)"
 trap 'rm -rf -- "$work"' EXIT
 context="$work/context"
-mkdir -p "$context" "$work/install/items" "$work/apply"
+mkdir -p "$context" "$work/software/items" "$work/apply"
 for id in first second; do
-  printf '[linux.apt]\norder=10\nmethod=apt\nsource_kind=default\npackages=%s\n' "$id" > "$work/install/items/$id.conf"
+  printf '[linux.apt]\norder=10\nmethod=apt\nsource_kind=default\npackages=%s\n' "$id" > "$work/software/items/$id.conf"
 done
 workflow_preflight() { :; }
 

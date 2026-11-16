@@ -12,7 +12,7 @@ try {
                 if ($Wsl) { $Arguments += '--wsl' }
                 $BashPlan = @(& $Bash @Arguments)
                 if ($LASTEXITCODE -ne 0) { throw "Bash planner failed on $Platform" }
-                $Plan = @(Get-InstallPlan -Directory (Join-Path $RepoRoot 'install/items') -Platform $Platform -Mirrors $Mirrors -Wsl $Wsl -Inspect $false)
+                $Plan = @(Get-InstallPlan -Directory (Join-Path $RepoRoot 'software/items') -Platform $Platform -Mirrors $Mirrors -Wsl $Wsl -Inspect $false)
                 $PowerShellPlan = @(ConvertTo-InstallPlanText -Plan $Plan -Envelope)
                 if (($BashPlan -join "`n") -cne ($PowerShellPlan -join "`n")) { throw "Planner mismatch: $Platform mirrors=$Mirrors wsl=$Wsl" }
             }

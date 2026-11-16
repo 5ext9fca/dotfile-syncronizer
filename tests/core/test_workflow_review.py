@@ -86,6 +86,21 @@ class WorkflowReviewTests(unittest.TestCase):
         with self.assertRaises(ResumeError):
             filter_stages(stages, ['missing'])
 
+    def test_snapshot_and_legacy_status_do_not_recommend_install_resume(self):
+        self.save('unix')
+        request_path = self.session / 'request.tsv'
+        request_path.write_text(request_document('macos', 'snapshot', '0', ['packages', 'configuration'], '', '0'))
+        shown = '\n'.join(show_status(self.session, 'unix'))
+        self.assertIn('rerun snapshot restore', shown)
+        self.assertNotIn('--resume', shown)
+        with self.assertRaisesRegex(ResumeError, 'Snapshot'):
+            resume(self.session, 'macos', 'snapshot', 'unix')
+        self.save('unix')
+        request_path.write_text(request_path.read_text().replace('workflow-request|3', 'workflow-request|2'))
+        shown = '\n'.join(show_status(self.session, 'unix'))
+        self.assertIn('read-only', shown)
+        self.assertNotIn('--resume', shown)
+
     def test_bad_request_rejected(self):
         self.save('unix')
         request = read_request(self.session)

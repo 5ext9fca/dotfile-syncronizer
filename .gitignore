@@ -5,9 +5,8 @@
 __pycache__/
 *.py[cod]
 
-# Fish rewrites its universal-variable cache in place, so it is
-# application-owned runtime state: it is neither tracked nor hard-linked.
-configs/fish/fish_variables
+# Local snapshot archives may contain private configuration.
+*.zip
 
 # Local Python environments and secrets.
 .venv/

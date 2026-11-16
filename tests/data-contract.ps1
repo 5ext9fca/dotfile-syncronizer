@@ -39,7 +39,7 @@ try {
     ) }
     $env:PATH = $Fixture.Bin
     $Context.RepoRoot = Join-Path $Temp 'repo'
-    $Items = Join-Path $Context.RepoRoot 'install/items'
+    $Items = Join-Path $Context.RepoRoot 'software/items'
     $null = New-Item -ItemType Directory $Items
     Copy-Item (Join-Path $PSScriptRoot 'fixtures/install/windows/tool.conf') $Items
     $Context.Profile = @{install='all'}

@@ -13,11 +13,11 @@ else
   elif command -v apt-get >/dev/null;then platform=linux.apt
   else platform=linux.dnf;fi
 fi
-contract_save workflow-request "$platform|$profile|0|configuration||0" "$session/request.tsv"
-printf '%s\n' "$(contract_fields workflow-summary)" "old|$profile|configuration|failed|23|0|$session/run.log|||command-failed|1||configuration" > "$session/workflow.tsv"
-stage_result_init "$session/configuration.result" configuration ''
-stage_result_artifact "$session/configuration.result" recovery_journal "$session/journal,one.tsv"
-stage_result_finish "$session/configuration.result" 23 0 ''
+contract_save workflow-request "$platform|$profile|0|packages||0" "$session/request.tsv"
+printf '%s\n' "$(contract_fields workflow-summary)" "old|$profile|packages|failed|23|0|$session/run.log|||command-failed|1||packages" > "$session/workflow.tsv"
+stage_result_init "$session/packages.result" packages ''
+stage_result_artifact "$session/packages.result" recovery_journal "$session/journal,one.tsv"
+stage_result_finish "$session/packages.result" 23 0 ''
 "$repo_root/workflow/status.sh" "$session" > "$test_tmp/status"
 grep -Fq 'exit=23' "$test_tmp/status"
 grep -Fq "$session/journal,one.tsv" "$test_tmp/status"
@@ -26,22 +26,23 @@ grep -Fq -- '--resume' "$test_tmp/status"
 export XDG_CONFIG_HOME="$test_tmp/config" DOTFILES_BACKUP_DIR="$test_tmp/backups"
 "$repo_root/install/$entry.sh" ${extra[@]+"${extra[@]}"} --resume "$session" --dry-run --results "$test_tmp/resumed.tsv" --session-id resume-cli > "$test_tmp/resumed.log"
 saved="$(contract_read workflow-request "$(cat "$test_tmp/backups/workflow-resume-cli/request.tsv")")"
-[[ "$saved" == "$platform|$profile|0|configuration|$session|1" ]]
-[[ "$(awk -F '|' '$4=="planned" {print $3}' "$test_tmp/resumed.tsv")" == configuration ]]
+[[ "$saved" == "$platform|$profile|0|packages|$session|1" ]]
+[[ "$(awk -F '|' '$4=="planned" {print $3}' "$test_tmp/resumed.tsv")" == packages ]]
 [[ ! -e "$XDG_CONFIG_HOME" ]]
 for option in --only-stage --from-stage;do
   if "$repo_root/install/$entry.sh" ${extra[@]+"${extra[@]}"} --resume "$session" --dry-run "$option" packages > "$test_tmp/rejected.log" 2>&1;then exit 1;fi
 done
 # Dry-run history must offer another dry run, not an unusable resume command.
-contract_save workflow-request "$platform|$profile|0|configuration||1" "$session/request.tsv"
+contract_save workflow-request "$platform|$profile|0|packages||1" "$session/request.tsv"
 for code in 23 75 130;do
-  stage_result_finish "$session/configuration.result" "$code" 1 ''
+  stage_result_finish "$session/packages.result" "$code" 1 ''
   "$repo_root/workflow/status.sh" "$session" > "$test_tmp/status"
   grep -Fq -- 'original command with --dry-run' "$test_tmp/status"
   if grep -Fq -- '--resume' "$test_tmp/status";then exit 1;fi
 done
 if "$repo_root/install/$entry.sh" ${extra[@]+"${extra[@]}"} --resume "$session" --dry-run > "$test_tmp/rejected.log" 2>&1;then exit 1;fi
 # Structured item diagnostics do not depend on logs.
+rm "$session/packages.result"
 contract_save workflow-request "$platform|$profile|0|packages||0" "$session/request.tsv"
 contract_save install-result 'docker|failed|1|exit-23||||' "$session/packages.tsv"
 printf '%s\n' "$(contract_fields workflow-summary)" "old|$profile|packages|failed|23|0||$session/packages.tsv||command-failed|1||packages" > "$session/workflow.tsv"

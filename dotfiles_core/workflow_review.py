@@ -24,7 +24,10 @@ def read_text(path: Path) -> str:
 
 
 def read_request(session: Path) -> dict[str, str]:
-    records = Contract.load('workflow-request').read(read_text(session / 'request.tsv'))
+    text = read_text(session / 'request.tsv')
+    if text.startswith('# dotfiles|workflow-request|2\n'):
+        text = text.replace('# dotfiles|workflow-request|2', '# dotfiles|workflow-request|3', 1)
+    records = Contract.load('workflow-request').read(text)
     if len(records) != 1:
         raise ContractError('Expected one workflow request')
     record = records[0]
@@ -95,9 +98,15 @@ def resume(session: Path, platform: str, profile: str, style: str,
         raise ResumeError('Resume cannot be combined with profile, stage or mirror selectors')
     session = session.resolve(strict=True)
     try:
+        if not read_text(session / 'request.tsv').startswith('# dotfiles|workflow-request|3\n'):
+            raise ResumeError('Legacy workflow sessions are read-only; start a new installation run')
         saved = read_request(session)
+    except ResumeError:
+        raise
     except (OSError, ContractError) as exc:
         raise ResumeError('Session has no valid resume request; use --from-stage manually') from exc
+    if saved['profile'] == 'snapshot':
+        raise ResumeError('Snapshot sessions require rerunning snapshot restore with the archive')
     if saved['platform'] != platform or saved['dry_run'] != '0':
         raise ResumeError('Resume requires a real session on the same platform/profile')
     records = {record['stage']: record for record in review(session, style)}
@@ -174,7 +183,11 @@ def show_status(session: Path, style: str) -> list[str]:
     if retry:
         if (session / 'request.tsv').exists():
             request = read_request(session)
-            if request['dry_run'] == '1':
+            if request['profile'] == 'snapshot':
+                lines.append('Retry after resolving the cause: rerun snapshot restore with the original archive (use configuration-only for an apply session); installation resume is not supported.')
+            elif not read_text(session / 'request.tsv').startswith('# dotfiles|workflow-request|3\n'):
+                lines.append('Legacy workflow session is read-only; start a new installation run. Guarded journal recovery remains available.')
+            elif request['dry_run'] == '1':
                 option = '--dry-run' if style == 'unix' else '-DryRun'
                 lines.append(f'Recheck after resolving the cause: rerun the original command with {option} and the same stage selection and mirror options (dry-run sessions cannot be resumed).')
             elif style == 'unix':
@@ -182,8 +195,7 @@ def show_status(session: Path, style: str) -> list[str]:
             else:
                 lines.append("Resume after resolving the cause: ./install/windows.ps1 -Resume '" + str(session).replace("'", "''") + "'")
         else:
-            option = '--from-stage' if style == 'unix' else '-FromStage'
-            lines.append(f'Retry after resolving the cause: {option} {retry} (legacy session without saved selection).')
+            lines.append('Legacy session has no saved selection; start a new installation run or restore a configuration snapshot. Guarded journal recovery remains available.')
     return lines
 
 

@@ -8,8 +8,6 @@ source "$apply_library_dir/atomic-report.sh"
 source "$apply_library_dir/stage-result.sh"
 # shellcheck source=apply-fs.sh
 source "$apply_library_dir/apply-fs.sh"
-# shellcheck source=desktop-fonts.sh
-source "$apply_library_dir/desktop-fonts.sh"
 # shellcheck source=apply-plan.sh
 source "$apply_library_dir/apply-plan.sh"
 # shellcheck source=../apply/handlers/files.sh

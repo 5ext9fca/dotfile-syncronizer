@@ -6,7 +6,7 @@ repo_root="$(cd -- "$(dirname -- "$0")/.." && pwd -P)"
 source "$repo_root/lib/install-items.sh"
 test_tmp="$(mktemp -d)"
 trap 'rm -rf -- "$test_tmp"' EXIT
-plan="$(install_items_plan "$repo_root/install/items" linux.dnf 0 0 0)"
+plan="$(install_items_plan "$repo_root/software/items" linux.dnf 0 0 0)"
 record="$(printf '%s\n' "$plan" | awk -F '|' '$1=="docker"')"
 for distro in fedora centos rhel;do
   install_dispatch docker-ce "$record" "linux.dnf|1|||$test_tmp/backups||$distro|" > "$test_tmp/plan"

@@ -228,6 +228,9 @@ def sort_items(items: dict[str, dict[str, str]]) -> list[dict[str, str]]:
 def read_items(directory: Path, platform: str, schema_directory: Path = ROOT / 'install/schema') -> list[dict[str, str]]:
     if platform not in PLATFORMS:
         raise DeclarationError('Unknown target platform')
+    if list(directory.glob('*.toml')):
+        from dotfiles_core.software import read_catalog, installation
+        return installation(read_catalog(directory), platform)
     schema = InstallSchema(schema_directory)
     files = sorted(directory.glob('*.conf'))
     if not files:

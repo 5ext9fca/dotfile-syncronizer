@@ -35,6 +35,10 @@ Runtime ownership uses `environments`, `provides`, and `wsl_provider`; capabilit
 
 ## Documentation and Configuration Authoring
 
+Keep the root `README.md` strictly as a user guide: prerequisites, usage, configuration, operating limits, troubleshooting, and links to user-facing documentation. Put architecture and internal contracts in their dedicated documents, and testing procedures and CI status in `tests/README.md`; do not add development notes or acceptance records to the root README.
+
+Keep all acceptance and validation run records in `tests/acceptance.md`, organized by date and change. Record the actual environment, commands or checks, results, failures and reruns, and skipped or unexecuted checks without overstating coverage. Keep `tests/README.md` focused on reusable testing instructions and link to the acceptance records instead of duplicating them.
+
 Start from [README.md](README.md). [docs/architecture.md](docs/architecture.md) describes layers and boundaries; [docs/configuration.md](docs/configuration.md) defines configuration semantics. LLMs generating new configuration must follow [docs/llm-config-authoring.md](docs/llm-config-authoring.md), read the relevant schema/handler, and validate candidate declarations without performing a real installation. Do not invent fields, package identities, platform sections, or CLI options.
 
 Keep operator commands in module READMEs and configuration-generation procedures in the LLM guide. Update affected documentation when changing CLI or schema behavior. Avoid duplicating full package inventories, claiming unrun native/CI checks passed, or presenting a plan as a replayable artifact. Preserve the existing project scope when regenerating docs.

@@ -38,13 +38,13 @@
 - 配置目录递归采集普通文件及空目录，允许精确路径/子树排除；也支持单文件。遇到未排除的链接、特殊文件、缺失路径或可检测的采集期间变化时失败；不保证运行中应用的多文件瞬时一致性。
 - 恢复统一复制：相同内容跳过，冲突先备份，保留目标额外文件。应用修改不会改变快照；不再要求仓库与用户配置同文件系统。
 - Windows 与 WSL 分别操作；不会创建或调度 WSL。运行前需要 Python、包管理器、网络及相应权限。
-- 保留安装前存在性检查、命令退出码策略、备份、受保护恢复、部署锁和失败报告；不增加安装后检查、服务健康检查或跨安装/配置阶段的整体回滚。
+- 安装前检查软件是否已存在；安装命令按退出码判断成功，不额外检查安装结果或服务状态。失败后查看报告，处理原因并手动重跑；软件安装与配置恢复不提供整体回滚。
 
 ## 声明与入口
 
 `software/items/<id>.toml` 统一描述安装规则和本机配置路径；`workflow/profiles/*.conf` 选择软件 ID。默认 profile 是较小的软件集合，`*-full` 选择当前平台所有适用声明；完整集合可能因未配置的软件而无法采集。
 
-原安装入口保留，**现在仅安装软件**，不再隐式应用配置、切换登录 shell、初始化持久镜像或启动 WSL：
+安装入口仅安装软件，不会隐式应用配置、切换登录 shell、初始化持久镜像或启动 WSL：
 
 ```bash
 ./install/macos.sh --dry-run
@@ -54,15 +54,8 @@
 
 旧仓库 `configs/`、`install/items/`、`apply/items/` 已移除；从本机真实配置创建新快照。旧硬链接的目标文件不由迁移脚本修改，应用配置不会自动采集。旧 v2 workflow 会话可查看但不可续跑；旧部署 journal 仍可受保护恢复。
 
-## 文档与检查
+## 详细使用指南
 
 - [快照操作](snapshot/README.md)、[安装](install/README.md)、[配置恢复](apply/README.md)
 - [声明语义](docs/configuration.md)、[声明编写指南](docs/llm-config-authoring.md)
-- [架构与能力边界](docs/architecture.md)、[会话与失败处理](workflow/README.md)、[镜像](mirrors/README.md)
-- [数据契约](contracts/README.md)、[测试](tests/README.md)
-
-```bash
-./tests/check.sh --suite all --strict
-```
-
-CI 仍禁用。按实际主机运行检查，缺失运行时或未执行的平台检查不能视为通过。
+- [配置路径与应用说明](docs/applications.md)、[会话与失败处理](workflow/README.md)、[镜像](mirrors/README.md)

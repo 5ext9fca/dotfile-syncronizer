@@ -10,41 +10,16 @@ import uuid
 from dotfiles_core.errors import CoreError, AdapterError
 from dotfiles_core.install_config import ROOT
 from dotfiles_core.snapshot import Platform, SnapshotError, capture, verify_archive, targets
+from dotfiles_viewer.api import SnapshotSession as ViewerSession, catalog_root, deployment_lease
+from dotfiles_viewer.host import host, host_roots
 from dotfiles_core.software import read_catalog, profile_selection, write_catalog
-from dotfiles_core.apply_rules import ApplyItem
-from dotfiles_core.apply_planning import Planner, Paths
-from dotfiles_core.apply_execution import NativeExecution, execute
+from dotfiles_core.apply_planning import Paths
+from dotfiles_core.apply_execution import NativeExecution
 from dotfiles_core.native_preflight import NativePreflight
 from dotfiles_core.native_installation import native_installation
 from dotfiles_core.workflow_preflight import Inputs, prepare, validate_plan_outputs
 from dotfiles_core.workflow_packages import NativePreparation, run as packages_run, boolean
 from dotfiles_core.workflow_session import Session, Stage, StageExecution, run as session_run
-
-
-def host():
-    system = host_platform.system()
-    if system == 'Darwin':
-        branch = 'macos'
-    elif system == 'Windows':
-        branch = 'windows'
-    elif system == 'Linux':
-        manager = next((name for name, command in [('pacman', 'pacman'), ('apt', 'apt-get'), ('dnf', 'dnf')] if shutil.which(command)), None)
-        if manager is None:
-            raise SnapshotError('No supported Linux package manager')
-        branch = 'linux.' + manager
-    else:
-        raise SnapshotError('Unsupported operating system')
-    arch = host_platform.machine().lower()
-    arch = {'amd64': 'x86_64', 'aarch64': 'arm64', 'i386': 'x86', 'i686': 'x86'}.get(arch, arch)
-    environment = 'wsl' if system == 'Linux' and 'microsoft' in host_platform.release().lower() else 'native'
-    return Platform(branch, arch, environment).validate()
-
-
-def host_roots():
-    home = str(Path.home())
-    if os.name == 'nt':
-        return dict(home=home, app_data=os.environ.get('APPDATA', ''), local_app_data=os.environ.get('LOCALAPPDATA', ''))
-    return dict(home=home, config_home=os.environ.get('XDG_CONFIG_HOME', str(Path(home) / '.config')))
 
 
 def native_values(platform, shell):
@@ -65,29 +40,13 @@ def native_values(platform, shell):
                 mirror_config=str(ROOT / 'mirrors/current.conf'))
 
 
-def configuration_plan(snapshot, scratch, roots, native, session, style):
-    targets(snapshot.software, roots)
-    items = [ApplyItem(identity + '-' + config['id'], f'payload/{identity}/{config["id"]}/root',
-                       config['root'], config['path'], 'copy')
-             for identity, data in snapshot.software.items() for config in data.get('config', [])]
-    planner = Planner(native.fs, str(session), style, Paths(windows=os.name == 'nt', case_insensitive=True))
-    resolved = {key: native.fs.value('resolve-root', value) for key, value in roots.items() if value}
-    rows = planner.components(items, str(scratch), resolved.get('config_home', ''), None, roots=resolved)
-    if style == 'unix':
-        for row in rows:
-            if row['action'] == 'skip' and row['source'] and row['reason'] == 'unchanged':
-                if Path(row['source']).stat().st_mode & 0o111 != Path(row['target']).stat().st_mode & 0o111:
-                    row.update(action='copy', reason='replace', backup=planner.paths.join(str(session), 'files', row['component'], row['target'].lstrip('/')))
-    # The original checkout, input archive and output session must not be overwritten.
-    validate_plan_outputs([str(ROOT), str(session)], rows, planner.paths)
-    return rows
-
-
 class SnapshotSession:
     def __init__(self, native, runner, directory, platform, style, dry, snapshot, scratch, roots, session, install):
         self.native, self.runner, self.directory = native, runner, directory
         self.platform, self.style, self.dry = platform, style, dry
         self.snapshot, self.scratch, self.roots, self.session, self.install = snapshot, scratch, roots, session, install
+        self.viewer = None
+        self.detach = False
 
     def publish(self, path, text, mode='replace'):
         self.native.publish(str(path), text, mode)
@@ -106,9 +65,9 @@ class SnapshotSession:
                 packages_run(self.style, self.platform.branch, self.dry, refresh, install,
                              NativePreparation(self.runner.adapter.operations['install-command'][0]))
                 return StageExecution(0)
-            rows = configuration_plan(self.snapshot, self.scratch, self.roots, self.native, self.session / 'configuration', self.style)
-            code = execute(rows, str(self.session / 'configuration'), self.dry, str(report), str(metadata), self.style, self.native)
-            return StageExecution(code)
+            result = self.viewer.apply(dry=self.dry, detach=self.detach)
+            self.publish(report, json.dumps(result, ensure_ascii=False))
+            return StageExecution(0)
         except (CoreError, OSError, ValueError) as exc:
             message = str(exc)
             print('error: ' + message, flush=True)
@@ -116,12 +75,12 @@ class SnapshotSession:
             return StageExecution(getattr(exc, 'exit_code', 1), message)
 
 
-def restore_snapshot(path, current, shell, roots, backup, dry=False, configuration_only=False):
+def restore_snapshot(path, current, shell, roots, backup, dry=False, configuration_only=False, detach=False):
     style = 'windows' if current.branch == 'windows' else 'unix'
     native = NativeExecution(style, shell)
-    with tempfile.TemporaryDirectory(prefix='dotfiles-snapshot-') as temporary:
-        scratch = Path(temporary)
-        snapshot = verify_archive(path, scratch)
+    with deployment_lease(dry=dry) as lease, ViewerSession(path, platform=current, roots=roots, backup=backup, protected=[ROOT]) as viewer:
+        scratch = viewer.scratch
+        snapshot = viewer.snapshot
         if snapshot.platform != current:
             raise SnapshotError(f'Snapshot platform mismatch: {snapshot.platform.document()} != {current.document()}')
         # Validate aliases and protected paths before installation or any persistent report.
@@ -155,14 +114,20 @@ def restore_snapshot(path, current, shell, roots, backup, dry=False, configurati
             runner = native_installation(style, shell, preflight.install_context)
         from dotfiles_core.workflow_preflight import assert_output
         assert_output(str(session), [str(ROOT), str(input_path), *map(str, destinations.values())], preflight, paths, style)
-        rows = configuration_plan(snapshot, scratch, roots, native, session / 'configuration', style)
-        validate_plan_outputs([str(session), str(input_path)], rows, paths)
+        viewer.preview()
+        if not dry and not detach and any(row['detach_required'] for row in viewer.preview()['items']):
+            raise SnapshotError('Confirm --detach-hardlink before installing or applying a snapshot')
         stages = (Stage('packages', not configuration_only and install != 'none', 'configuration-only' if configuration_only else '', 'packages'),
                   Stage('configuration', True, '', 'configuration'))
         context = scratch / 'context'
         context.mkdir()
         settings = Session(identity, session, 'snapshot', current.branch, style, dry, False, stages, context_directory=context)
         operations = SnapshotSession(native, runner, directory, current, style, dry, snapshot, scratch, roots, session, install)
+        operations.viewer = viewer
+        operations.detach = detach
+        # Explicit nesting is used when the API caller, rather than a native wrapper, owns the lease.
+        original_apply = viewer.apply
+        viewer.apply = lambda **kwargs: original_apply(lease=lease, **kwargs)
         result = session_run(settings, operations)
         if result.exit_code:
             raise AdapterError('Snapshot restore failed; inspect the session and rerun with the snapshot after resolving the cause', result.exit_code)
@@ -191,12 +156,12 @@ def request(operation, context):
             import re
             if not re.fullmatch('[a-z][a-z0-9-]*', profile):
                 raise SnapshotError('Invalid profile name')
-            names = profile_selection(ROOT / 'workflow/profiles' / (profile + '.conf'))
+            names = profile_selection(catalog_root() / 'workflow/profiles' / (profile + '.conf'))
         snapshot = capture(read_catalog(), host(), names, host_roots(), context['output'], dry)
     elif action == 'restore':
         restore_snapshot(context['snapshot'], host(), context['native_shell'], host_roots(),
                          os.environ.get('DOTFILES_BACKUP_DIR', str(Path.home() / '.dotfiles-backups')), dry,
-                         boolean(context.get('configuration_only', False)))
+                         boolean(context.get('configuration_only', False)), boolean(context.get('detach_hardlink', False)))
         return None, []
     else:
         raise SnapshotError('Unknown snapshot action')

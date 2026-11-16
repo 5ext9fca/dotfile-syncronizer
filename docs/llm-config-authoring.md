@@ -1,25 +1,5 @@
-# 面向 LLM 的声明编写指南
+# 声明维护入口
 
-维护任务使用仓库的 [maintain-software skill](../skills/maintain-software/SKILL.md) 组织来源核实、增删改、验证与交付；本指南及 schema 定义具体编写规则。
+声明唯一所有者是 dotfiles-viewer。请在 Viewer checkout 阅读其 AGENTS.md、docs/configuration.md 和 docs/llm-config-authoring.md 后维护默认声明，或明确选择外部 catalog。不要在 syncronizer 重建 software/items 或 workflow/profiles 副本。
 
-先阅读 README、AGENTS 和 [配置语义](configuration.md)，再读相关安装 schema 与 handler。项目不再维护应用配置内容；不要新增 `configs/`、旧 install/apply 声明或在入口硬编码复制。
-
-声明与 profile 由用户维护，仓库只提供缺省值；不要把缺省配置覆盖不全当作项目能力缺陷。根据本机补充声明时，先检查路径及文件类型，优先读取必要的结构信息，不把真实配置正文、凭据或本机私有值写入仓库。仅为已确认的平台添加路径；没有已核实安装规则时可以新增配置专用项，不猜包名。不把认证文件、历史、缓存、运行时数据库或自动安装的工具目录整体纳入配置；配置文件本身仍可能包含敏感信息，排除项不等于自动脱敏。
-
-## 新增或修改软件
-
-1. 在 `software/items/<id>.toml` 维护一个软件，schema_version 为整数 1。确认平台、安装方式、包身份或下载来源、依赖和 native/WSL 所有权。使用现有声明或权威来源，不猜软件身份。
-2. 参照同机制的现有 TOML，安装表字段值使用字符串，含点/斜线的平台键加引号。机制允许字段以 `install/schema/` 为准；不要写任意 command、post_install、version 或 timeout。
-3. 有配置时添加一个或多个 `[[config]]`：id、platforms、root、path，以及可选 exclude。明确真实本机配置路径；不能因为软件存在就臆测配置目录。目录自动包含后续新增文件，排除使用精确路径及子树匹配。
-4. 可使用 `[requires]` 声明配置项需要的软件。公共安装依赖和仅安装依赖按原有语义填写；声明应无缺失引用和环。跨平台配置必须显式列出支持的安装分支。
-5. 只有用户要求改变集合时才更新 profile；格式为 `schema_version=3`、`software=ID ...` 或 `software=all`，不再维护组件关联。
-
-不存在的配置路径将导致采集失败，不生成默认配置。采集会保存原始内容，没有自动敏感信息识别；声明作者负责限定目录和排除凭据、缓存、锁文件等不应迁移内容。
-
-## 验证
-
-准备项目要求的 Python 运行时；用 `install/plan.sh --platform PLATFORM` 或对应 PowerShell 离线检查安装声明，用所处平台安装入口 dry-run 检查计划。统一模型测试覆盖所有平台的声明和依赖。
-
-采集候选声明时只能使用隔离临时 HOME、明确的测试配置与输出路径；不要自动把真实用户配置收进测试产物或仓库。检查目录新增文件、排除、缺失路径、链接拒绝、平台限制和恢复备份。不能以实际安装来验证包名。
-
-完成后说明声明变更、选择变化、采集范围与排除、实际验证及未验证平台。修改 CLI/schema 时同步更新 README、组件手册及本指南，不宣称快照锁定实际版本或可跨平台转换。
+安装机制实现仍位于本项目，执行策略位于 install/schema/execution.tsv。修改规则后执行 Viewer 声明校验及隔离快照测试；涉及安装行为时在本项目执行对应主机 dry-run，不执行真实安装作为声明验证。

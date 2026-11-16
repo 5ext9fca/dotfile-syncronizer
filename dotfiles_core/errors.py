@@ -1,8 +1,7 @@
 """Explicit failures at the core/platform boundary."""
 
 
-class CoreError(Exception):
-    """A diagnosed failure suitable for display without a traceback."""
+from dotfiles_viewer.errors import CoreError
 
 
 class RuntimeRequirementError(CoreError):

@@ -28,7 +28,7 @@ Stages: --only-stage NAME or --from-stage NAME (packages).
 Profiles select software IDs for installation only.
 Configuration migration uses snapshot/snapshot.sh; mirrors and shell are not initialized.
 --china-mirrors / --no-china-mirrors override the selected profile.
-Profiles are read only from workflow/profiles/NAME.conf.
+Profiles come from dotfiles-viewer; --catalog DIR selects a complete external catalog.
 EOF
 }
 
@@ -36,9 +36,10 @@ while (( $# > 0 )); do
   case "$1" in
     --dry-run) dry_run=1 ;;
     --plan) plan_only=1 ;;
-    --profile|--results|--only-stage|--from-stage|--session-id|--resume)
+    --catalog|--profile|--results|--only-stage|--from-stage|--session-id|--resume)
       [[ $# -ge 2 && -n "$2" ]] || { usage >&2; exit 2; }
       case "$1" in
+        --catalog) export DOTFILES_CATALOG="$2" ;;
         --profile) profile_override="$2" ;;
         --resume) resume_session="$2" ;;
         --results) results_path="$2" ;;

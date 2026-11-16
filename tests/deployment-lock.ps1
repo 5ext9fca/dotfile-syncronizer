@@ -24,12 +24,10 @@ try {
     $Rejected = $false
     try { Invoke-DeploymentLocked $false { } } catch { $Rejected = $true }
     if (-not $Rejected -or -not (Test-Path $env:DOTFILES_DEPLOYMENT_LOCK)) { throw 'Stale lease was reclaimed' }
-    foreach ($Arguments in @(@{Components=@('unknown')}, @{Restore=(Join-Path $Temp 'missing-journal')})) {
-        $Rejected = $false
-        try { & (Join-Path $PSScriptRoot '../apply/windows.ps1') @Arguments }
-        catch { $Rejected = $_.Exception.Message -like 'Deployment lock exists:*' }
-        if (-not $Rejected) { throw 'Standalone entry did not acquire its lease before coordination' }
-    }
+    # Snapshot entry requires explicit arguments; historical restore is removed.
+    $Command = Get-Command (Join-Path $PSScriptRoot '../apply/windows.ps1')
+    if ($Command.Parameters.ContainsKey('Restore')) { throw 'Historical restore entry still exists' }
+
 
 } finally {
     $env:DOTFILES_DEPLOYMENT_LOCK = $OldPath; $env:DOTFILES_DEPLOYMENT_TOKEN = $OldToken

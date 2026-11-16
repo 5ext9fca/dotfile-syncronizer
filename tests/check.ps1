@@ -37,8 +37,8 @@ try {
         }
         if (-not (Get-Command $Command -ErrorAction SilentlyContinue)) { $Missing = "runtime $Command" }
         if ($Runtime -eq 'python' -and -not $Missing) {
-            $Code = Invoke-CheckCommand $Python @('-c', 'import sys; assert sys.version_info[:2] == (3, 15)') -Quiet
-            if ($Code -ne 0) { $Missing = 'Python 3.15 (validation runtime)' }
+            $Code = Invoke-CheckCommand $Python @('-c', 'import sys; assert sys.version_info[:2] == (3, 14)') -Quiet
+            if ($Code -ne 0) { $Missing = 'Python 3.14 (validation runtime)' }
         }
         if ($Id -eq 'install-parity' -and -not (Get-Command $Bash -ErrorAction SilentlyContinue)) { $Missing = "Bash $Bash" }
         if ($Id -eq 'shell-lint') {

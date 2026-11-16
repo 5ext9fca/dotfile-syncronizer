@@ -1,8 +1,0 @@
-schema_version = 1
-
-[[config]]
-id = "skills"
-platforms = ["macos"]
-root = "home"
-path = ".agents/skills"
-exclude = []

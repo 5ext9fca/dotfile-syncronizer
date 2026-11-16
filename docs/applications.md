@@ -1,6 +1,6 @@
 # 应用配置覆盖
 
-应用行为由用户本机配置决定。项目不再提供 Fish、Helix、终端或 Git 的预设内容；唯一配置路径来源是 `software/items/*.toml`。
+应用行为由用户本机配置决定。项目不再提供 Fish、Helix、终端或 Git 的预设内容；唯一配置路径来源是 Viewer 的 `software/items/*.toml`。
 
 目前迁移的路径覆盖 Fish、Git、Helix、WezTerm、Zellij、Windows Terminal，以及显式选择的桌面字体设置。安装清单中的其他软件可以只有安装规则，不能据此声称其配置已采集。
 

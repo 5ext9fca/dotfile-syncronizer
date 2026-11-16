@@ -5,6 +5,7 @@ import re
 
 from dotfiles_core.errors import CoreError
 from dotfiles_core.install_config import ROOT, rows
+from dotfiles_viewer.install_config import ROOT as VIEWER_RESOURCES
 
 
 class PolicyError(CoreError):
@@ -21,7 +22,7 @@ class ExecutionPolicy:
 
 
 def execution_policy(method: str, operation: str, path: Path = ROOT / 'install/schema/execution.tsv') -> ExecutionPolicy:
-    methods = {row[0] for row in rows(ROOT / 'install/schema/methods.tsv')}
+    methods = {row[0] for row in rows(VIEWER_RESOURCES / 'install/schema/methods.tsv')}
     policies = {}
     operations = {'probe', 'install', 'download', 'modify'}
     for cells in rows(path):

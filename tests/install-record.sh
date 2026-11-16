@@ -16,5 +16,5 @@ if install_record_update "$record" id first id second >/dev/null;then exit 1;fi
 if install_record_update "$record" id $'bad\nvalue' >/dev/null;then exit 1;fi
 if install_record_update "$record" id 'bad|value' >/dev/null;then exit 1;fi
 # Generated fields are not user declaration fields.
-if awk -F '\t' '$1=="discovery" {found=1} END {exit !found}' "$repo_root/install/schema/fields.tsv";then exit 1;fi
+if awk -F '\t' '$1=="discovery" {found=1} END {exit !found}' "$("${DOTFILES_PYTHON:-$repo_root/.venv/bin/python}" -c 'from dotfiles_viewer.install_config import ROOT; print(ROOT / "install/schema/fields.tsv")')";then exit 1;fi
 printf 'Named install record reads/updates, literal values and declaration separation passed.\n'

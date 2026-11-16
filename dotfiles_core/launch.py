@@ -10,8 +10,8 @@ sys.dont_write_bytecode = True
 
 def main():
     # Keep the bootstrap parseable by older interpreters so rejection is explicit.
-    if sys.version_info[:2] < (3, 15):
-        print("error: Python >=3.15 is required; prepare .venv or set DOTFILES_PYTHON.", file=sys.stderr)
+    if sys.version_info[:2] < (3, 14):
+        print("error: Python >=3.14 is required; prepare .venv or set DOTFILES_PYTHON.", file=sys.stderr)
         return 2
     from dotfiles_core.cli import main as core_main
     return core_main()

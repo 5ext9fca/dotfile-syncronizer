@@ -68,5 +68,5 @@ awk -F '|' 'NR>1 && ($11!=1 || $13!="configuration") {exit 1}' "$work/result.tsv
 grep -q -- '--resume ' "$work/status"
 rm "$work/session/request.tsv"
 "$BASH" "$repo_root/workflow/status.sh" "$work/session" > "$work/legacy-status"
-grep -q -- '--from-stage configuration' "$work/legacy-status"
+grep -q -- 'Legacy session has no saved selection' "$work/legacy-status"
 printf 'Execution outcomes, probes, dry-run and interrupted-session contracts passed.\n'

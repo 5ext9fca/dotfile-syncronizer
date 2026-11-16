@@ -1,51 +1,10 @@
 ---
 name: maintain-software
-description: 维护 dotfile-syncronizer 的软件安装声明、配置采集路径及 profile。用户要求新增、修改、删除软件声明，核对安装来源，或按本机配置调整采集范围时使用；不用于实际安装软件、采集真实配置或执行恢复。
+description: 定位 Viewer 的统一软件声明并按其指南维护，在 syncronizer 验证安装行为。
 ---
 
-# 维护软件声明
+# 维护统一声明
 
-将用户的软件选择和已核实的配置位置落实到声明，并完成无安装验证。用中文与用户交流。声明和 profile 是用户维护的选择，仓库内现有集合只是缺省值。
+声明唯一来源已迁入 dotfiles-viewer。本项目不维护软件与 profile 副本。先定位用户指定的 Viewer checkout 或外部 catalog，阅读其 AGENTS.md、docs/configuration.md、docs/llm-config-authoring.md；按这些文档修改并做无安装验证。
 
-## 定位与读取
-
-先定位目标 checkout；以下路径均相对该仓库根目录，不相对 skill 安装目录。复制本 skill 到其他 agent 的技能目录后，也必须读取目标仓库的当前规范。无法确定 checkout 时再询问用户，不修改另一个同名项目。
-
-1. 阅读 `README.md`、`AGENTS.md`、`docs/configuration.md` 和 `docs/llm-config-authoring.md`；检查工作区已有改动，保留用户未提交内容。
-2. 阅读目标 `software/items/<id>.toml`、同机制示例和受影响的 `workflow/profiles/*.conf`。
-3. 修改安装规则前，阅读 `install/schema/fields.tsv`、`methods.tsv`、`sources.tsv` 及相应 `install/handlers/` 实现；涉及发现、多安装方式或 native/WSL 所有权时，再读对应 discovery、probes、capabilities、runtime-providers schema。执行超时与成功退出码由 `install/schema/execution.tsv` 管理，不写进软件声明。
-
-## 核实选择与来源
-
-- 从用户请求和现有声明确定软件身份、目标安装分支、native/WSL 环境及是否需要采集配置。只修改请求涉及的部分；仅改安装来源时保留配置路径，反之亦然。
-- 新增或改变包名、仓库、下载 URL、发布通道时，核对软件官方安装文档或包管理器官方目录，记录可复查的来源。不要从软件名猜包 ID，不把 nightly、主版本升级或第三方打包悄悄当作等价替换。离线时明确尚未核实的部分，不以真实安装验证包身份。
-- 已核实配置路径但没有安装规则时，可以创建配置专用项，并明确它不会安装应用。必要信息缺失时只询问会影响正确性的事实，继续完成独立部分；不虚构平台覆盖。
-- 本机路径确认只检查请求相关的目录结构、存在性和文件类型，避免读取无关配置正文；不把凭据、个人身份或本机私有值写入仓库、报告或测试产物。
-
-## 修改声明
-
-按 `docs/llm-config-authoring.md` 和当前 schema 编写，不复制一套独立字段定义。
-
-- 在 `software/items/<id>.toml` 合并维护安装与配置。统一声明使用整数 `schema_version = 1`；安装表值保持字符串；含点或斜线的平台键加引号。不引入任意命令、post_install、版本锁定或应用配置正文。
-- 区分 `depends_on`、`install_depends_on`、`[requires]` 与安装方法子表的依赖语义。引用必须存在、平台适用且无环；保持 `environments`、`provides`、`wsl_provider` 的安装所有权约束。
-- `[[config]]` 只声明已核实平台的路径。使用支持的 root 和相对 path，不写绝对路径、变量插值或 `..`。每条路径必须存在；不要生成默认配置以让采集通过。
-- 排除项是相对配置路径的精确路径或子树，不是 glob。目录会包含未来新增的未排除文件；对凭据、历史、缓存、锁和运行时数据明确缩小范围。未排除链接会使采集失败，不跟随链接或把整个工具目录当配置。排除不等于自动脱敏。
-- 仅在用户要求改变集合时更新 profile（`schema_version=3`）。注意 `software=all` 会自动纳入新增的适用声明，依赖闭包也会扩大快照采集范围；即使未修改 profile 文件也应报告这些影响。
-- 删除或重命名 ID 前，搜索声明依赖、profile、测试及文档引用。不能留下悬空引用，也不能为通过验证静默删掉依赖方；若移除依赖需要用户选择替代方案，先完成影响分析再询问。删除声明不会卸载软件、删除本机配置或修改已有 ZIP 快照。
-
-## 无安装验证
-
-先读 `tests/README.md` 和相关入口，使用当前 checkout 的 `.venv` 或显式 `DOTFILES_PYTHON`，验证仅用 Python 3.15；缺失时报告阻塞，不搜索其他环境或替换正在运行的解释器。
-
-1. 按编写指南运行离线 plan，覆盖 `linux.apt`、`linux.dnf`、`linux.pacman`、`macos`、`windows`；涉及 WSL 时覆盖适用的 `--wsl` 分支。参数以 `install/plan.sh` / `install/plan.ps1` 为准，离线跨平台计划不等于原生安装验证。
-2. 运行 `tests/core/test_snapshot.py` 中的统一声明和快照测试，核对所有平台依赖图。配置范围变更需用候选声明构造隔离的临时 HOME/配置目录和合成内容，检查路径解析、排除、缺失路径及链接拒绝，必要时检查复制、冲突备份和重复恢复。通用测试通过不能代替候选路径检查；不能采集真实用户配置作为测试夹具。
-3. 安装声明变更运行当前主机的安装 dry-run，覆盖默认及对应 `*-full` profile；命令见 `install/README.md`。其他主机只做模型校验，明确原生检查未执行。按改动范围选择 `tests/checks/manifest.tsv` 中的相关检查，入口见 `tests/README.md`。
-4. 检查 diff、引用和受影响文档；实际环境、命令、失败、重跑及未执行项记录到 `tests/acceptance.md`。不要向根 README 添加验收或开发记录。
-
-维护声明不授权真实安装、下载执行脚本、采集真实配置、恢复、改登录 shell、设置镜像或调度 WSL。若现有机制无法表达用户需求，说明缺口；不要借维护声明扩大执行器、回滚、服务健康检查或环境复现保证。
-
-## 交付
-
-说明修改的 ID/平台、包来源证据、配置采集范围与排除、profile 和依赖闭包影响，以及实际验证与未验证范围。复核根 README、相关组件手册和 AGENTS；即使不需文档改动也说明复核结果。按仓库提交约定提交完整且已验证的改动，不夹带用户已有修改。
-
-适用请求例如：“为这个软件增加已确认的 macOS 安装声明”“把已确认目录纳入快照并排除缓存”“移除不用的软件声明并检查引用”。实际快照创建、安装与恢复使用对应模块的操作指南，不能由本 skill 隐式执行。
+涉及安装机制时读取本项目对应 handler 和 install/schema/execution.tsv，执行当前主机 dry-run。使用预先准备的 Python 3.14 与 Viewer 依赖，不采集真实配置作为测试，不隐式安装软件或应用快照。验证记录写入 tests/acceptance.md。

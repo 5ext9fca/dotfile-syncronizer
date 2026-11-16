@@ -54,7 +54,7 @@ try {
     Assert ($StatusText -match '-Resume ') 'Missing session resume entry'
     Remove-Item (Join-Path $Context.SessionPath 'request.tsv')
     $LegacyText = (& (Join-Path $Repo 'workflow/status.ps1') -Session $Context.SessionPath) -join "`n"
-    Assert ($LegacyText -match '-FromStage packages') 'Missing legacy retry entry'
+    Assert ($LegacyText -match 'Legacy session has no saved selection') 'Missing legacy read-only guidance'
     Assert ($Rows[1].status -eq 'blocked' -and $Rows[1].retry_stage -eq 'packages' -and $Rows[1].schema_version -eq 1) 'Missing retry/version contract'
 } finally {
     $env:PATH = $PreviousPath; $env:DOTFILES_TEST_PACKAGE_STATE = $PreviousState

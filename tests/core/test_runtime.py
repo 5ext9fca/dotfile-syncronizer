@@ -57,10 +57,10 @@ exit $LASTEXITCODE
         self.assertEqual(result.stdout.strip(), sys.executable)
 
     def test_version_policy(self):
-        for version in ((2, 7), (3, 11), (3, 14)):
+        for version in ((2, 7), (3, 11), (3, 13)):
             with self.subTest(version=version), self.assertRaises(RuntimeRequirementError):
                 require_runtime(version)
-        for version in ((3, 15), (3, 16), (4, 0)):
+        for version in ((3, 14), (3, 16), (4, 0)):
             require_runtime(version)
 
     def test_absolute_launcher_outside_checkout(self):
@@ -80,11 +80,11 @@ exit $LASTEXITCODE
             self.assertEqual(result.stdout.strip(), sys.executable)
 
     def test_bootstrap_rejects_simulated_old_version(self):
-        code = "import runpy, sys; sys.version_info=(3,14,0); runpy.run_path(sys.argv[1], run_name='__main__')"
+        code = "import runpy, sys; sys.version_info=(3,13,0); runpy.run_path(sys.argv[1], run_name='__main__')"
         result = subprocess.run([sys.executable, "-B", "-c", code,
                                  str(ROOT / "dotfiles_core/launch.py")], capture_output=True, text=True)
         self.assertEqual(result.returncode, 2)
-        self.assertIn("Python >=3.15", result.stderr)
+        self.assertIn("Python >=3.14", result.stderr)
         self.assertNotIn("Traceback", result.stderr)
 
     @unittest.skipIf(os.name == "nt", "Unix wrapper")

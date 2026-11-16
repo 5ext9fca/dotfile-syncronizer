@@ -33,18 +33,28 @@ deployment_run 0 nested
 [[ -f "$work/nested" && ! -e "$DOTFILES_DEPLOYMENT_LOCK" ]]
 if deployment_run 0 false;then exit 1;fi
 [[ ! -e "$DOTFILES_DEPLOYMENT_LOCK" ]]
-# Failure to collect ownership metadata must not leave a newly acquired lock.
-# uname is called indirectly by the sourced deployment-lock implementation.
-# shellcheck disable=SC2329
-if (set -e; uname() { return 19; }; deployment_run 0 touch "$work/wrong");then exit 1;fi
-[[ ! -e "$DOTFILES_DEPLOYMENT_LOCK" && ! -e "$work/wrong" ]]
+# Failure to collect ownership metadata precedes lock creation.
+"$dotfiles_python_executable" - <<'PYTEST'
+import os
+from pathlib import Path
+from unittest.mock import patch
+from dotfiles_viewer.lease import acquire
+with patch('dotfiles_viewer.lease.socket.gethostname', side_effect=OSError('metadata')):
+    try:
+        acquire()
+    except OSError:
+        pass
+    else:
+        raise AssertionError('Expected metadata failure')
+assert not Path(os.environ['DOTFILES_DEPLOYMENT_LOCK']).exists()
+PYTEST
 # Unknown/stale ownership is never silently reclaimed.
 mkdir "$DOTFILES_DEPLOYMENT_LOCK"
 printf '999999|unknown|token\n' > "$DOTFILES_DEPLOYMENT_LOCK/owner"
 if deployment_run 0 touch "$work/wrong" 2>/dev/null;then exit 1;fi
 [[ -f "$DOTFILES_DEPLOYMENT_LOCK/owner" && ! -e "$work/wrong" ]]
 # Public mutating entry points acquire the lease before planning or recovery.
-for entry in apply/apply.sh apply/mirrors.sh;do
+for entry in apply/mirrors.sh;do
   set +e
   "$BASH" "$repo_root/$entry" > "$work/entry.log" 2>&1
   code=$?
@@ -55,5 +65,5 @@ set +e
 "$BASH" "$repo_root/apply/apply.sh" --restore "$work/missing-journal" > "$work/entry.log" 2>&1
 code=$?
 set -e
-[[ "$code" == 73 && -f "$DOTFILES_DEPLOYMENT_LOCK/owner" ]]
+[[ "$code" == 2 && -f "$DOTFILES_DEPLOYMENT_LOCK/owner" ]]
 printf 'Deployment contention, nesting, read-only bypass and failure cleanup passed.\n'

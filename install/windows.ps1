@@ -4,6 +4,7 @@ param(
     [switch]$NoChinaMirrors,
     [switch]$ChinaMirrors,
     [string]$Profile,
+    [string]$Catalog,
     [switch]$PlanOnly,
     [string]$ResultsPath,
     [string]$OnlyStage,
@@ -12,6 +13,7 @@ param(
     [string]$SessionId = ([guid]::NewGuid().ToString('N'))
 )
 $ErrorActionPreference = 'Stop'
+if ($Catalog) { $env:DOTFILES_CATALOG = [IO.Path]::GetFullPath($Catalog) }
 if ($PSBoundParameters.ContainsKey('Profile') -and $Profile -cnotmatch '^[a-z][a-z0-9-]*$') { throw 'Invalid profile name' }
 if ($ChinaMirrors -and $NoChinaMirrors) { throw 'ChinaMirrors and NoChinaMirrors are mutually exclusive' }
 $RepoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))

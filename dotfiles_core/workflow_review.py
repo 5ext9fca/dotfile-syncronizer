@@ -186,7 +186,7 @@ def show_status(session: Path, style: str) -> list[str]:
             if request['profile'] == 'snapshot':
                 lines.append('Retry after resolving the cause: rerun snapshot restore with the original archive (use configuration-only for an apply session); installation resume is not supported.')
             elif not read_text(session / 'request.tsv').startswith('# dotfiles|workflow-request|3\n'):
-                lines.append('Legacy workflow session is read-only; start a new installation run. Guarded journal recovery remains available.')
+                lines.append('Legacy workflow session is read-only; start a new installation run. Historical journal restore commands are no longer available; existing backup files are retained.')
             elif request['dry_run'] == '1':
                 option = '--dry-run' if style == 'unix' else '-DryRun'
                 lines.append(f'Recheck after resolving the cause: rerun the original command with {option} and the same stage selection and mirror options (dry-run sessions cannot be resumed).')
@@ -195,7 +195,7 @@ def show_status(session: Path, style: str) -> list[str]:
             else:
                 lines.append("Resume after resolving the cause: ./install/windows.ps1 -Resume '" + str(session).replace("'", "''") + "'")
         else:
-            lines.append('Legacy session has no saved selection; start a new installation run or restore a configuration snapshot. Guarded journal recovery remains available.')
+            lines.append('Legacy session has no saved selection; start a new installation run or restore a configuration snapshot. Historical journal restore commands are no longer available; existing backup files are retained.')
     return lines
 
 

@@ -86,7 +86,7 @@ class SnapshotTests(unittest.TestCase):
         self.assertIn('empty/new', [e['path'] for e in snapshot.entries])
 
     def test_capture_changes_fail(self):
-        from dotfiles_core import snapshot
+        from dotfiles_viewer import snapshot
         original = snapshot.inventory
         calls = 0
         def inventory(*args):
@@ -122,7 +122,7 @@ class SnapshotTests(unittest.TestCase):
             verify_archive(self.archive)
 
     def test_bad_version_and_paths(self):
-        for change in [lambda m: m.update(schema_version=2),
+        for change in [lambda m: m.update(schema_version=1),
                        lambda m: m['entries'][0].update(path='../escape'),
                        lambda m: m['entries'][0].update(path='/absolute'),
                        lambda m: m['entries'][0].update(path='CON'),
@@ -236,7 +236,7 @@ class NativeSnapshotTests(unittest.TestCase):
         catalog = {'tool': dict(schema_version=1, config=[dict(id='settings', platforms=[self.platform.branch], root='home', path='tool')])}
         capture(catalog, self.platform, ['tool'], dict(home=str(self.source)), self.archive)
         self.env = dict(os.environ, HOME=str(self.target), USERPROFILE=str(self.target),
-                        DOTFILES_PYTHON=sys.executable, DOTFILES_BACKUP_DIR=str(self.base / 'backups'),
+                        DOTFILES_PYTHON=sys.executable, DOTFILES_BACKUP_DIR=str(self.base / 'backups'), XDG_STATE_HOME=str(self.base / 'state'),
                         DOTFILES_DEPLOYMENT_LOCK=str(self.base / 'lease'), DOTFILES_DEPLOYMENT_TOKEN='')
         self.original = hashlib.sha256(self.archive.read_bytes()).hexdigest()
 
@@ -254,7 +254,7 @@ class NativeSnapshotTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         return result.stdout
 
-    def test_native_copy_backup_idempotence_and_guarded_recovery(self):
+    def test_viewer_copy_backup_idempotence_and_removed_recovery(self):
         import subprocess
         (self.target / 'tool').mkdir()
         (self.target / 'tool/value').write_text('old')
@@ -270,7 +270,7 @@ class NativeSnapshotTests(unittest.TestCase):
         before = (self.target / 'tool/value').stat().st_ino
         self.invoke()
         self.assertEqual((self.target / 'tool/value').stat().st_ino, before)
-        journal_name = 'journal.jsonl' if os.name == 'nt' else 'journal.tsv'
+        journal_name = '*.original'
         journals = list((self.base / 'backups').rglob(journal_name))
         self.assertTrue(journals)
         (self.target / 'tool/value').write_text('application edited')

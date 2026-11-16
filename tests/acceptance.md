@@ -23,3 +23,22 @@
 - PowerShell、ShellCheck 不可用；Linux、原生 Windows/WSL 未执行。跨平台模型/声明测试不能替代这些原生检查。
 
 真实安装未执行；配置写入、备份和恢复测试均限于临时目录及假安装命令，没有采集或修改操作者应用配置。
+
+
+## 2026-11-16 · 依赖 Viewer 与 Python 3.14
+
+环境：macOS ARM64，Python 3.14.10。预先安装本地 dotfiles-viewer 0.2.0 及其 FastAPI/Pydantic/AnyIO 依赖。旧 3.15 虚拟环境移至临时目录，运行之外创建新环境。
+
+统一软件声明、profile、声明 schema、快照 v2 与部署锁归 Viewer；本项目保留安装执行、镜像及组合流程。旧 v1 快照和历史 journal 恢复命令取消，已有资料不删除。Web UI 按用户要求在 Viewer 保留，但不再是必需交付项。
+
+- `DOTFILES_BACKUP_DIR=/private/tmp/viewer-syncronizer-validation ./install/macos.sh --dry-run`：通过。
+- 同环境 `./install/macos.sh --profile macos-full --dry-run --no-china-mirrors`：通过。仅观察与预览，无真实安装。
+- Python 核心回归首轮发现旧版本断言、配置阶段 sidecar 和重复 schema 路径，已修正。163 项核心检查中最后两处过期断言已改为拒绝 Python 3.13 和旧 v1，随后重跑 snapshot（24 项通过）与 runtime（10 项，9 通过、PowerShell 不可用跳过）。
+- 终端中断测试在沙箱内因 /dev/tty 权限失败，授权后在沙箱外通过。
+- Viewer 自身 21 项隔离测试通过；快照集成使用伪 Homebrew，验证归档安装规则、失败阻断与成功应用。未采集真实配置或变更本机软件。
+
+原生 Linux/Windows/WSL 未执行；PowerShell 与 ShellCheck 不可用。文档已按单向依赖和新的声明所有权复核，历史验收记录保留原样。
+
+最终完整 core 调用：28 个检查通过、2 个失败、24 个平台不适用跳过。两个失败项为旧会话提示断言和运行期间更新的备份路径断言；均已修正。`bash tests/execution-contract.sh` 重跑通过；最终 `.venv/bin/python -m unittest discover -s tests/core -v` 为 163 项、162 通过、1 项因缺少 PowerShell 跳过。其余适用检查包括安装、handlers、workflow、镜像、apply 事务、共享锁、真实进程竞争、终端输入/Ctrl-C、超时取消、依赖选择及报告均已有通过记录。没有宣称初次完整调用全绿。
+
+`git diff --check` 通过。文档已复核两项目 README、AGENTS 和相关组件说明，移除旧恢复入口提示及重复声明位置。Viewer wheel 独立加载 54 个默认软件声明，确认包资源无需 checkout。

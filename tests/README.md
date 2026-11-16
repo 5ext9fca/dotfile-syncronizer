@@ -1,6 +1,6 @@
 # 测试与验证
 
-准备 Python ≥3.15（checkout 的 .venv 或显式 DOTFILES_PYTHON），运行 `./tests/check.sh --suite all --strict` 或 Windows `./tests/check.ps1 -Suite all -Strict`。共享 manifest 定义 core、cross、dry-run、lint；strict 模式下适用主机缺少运行时即失败，不适用平台明确跳过。
+准备 Python ≥3.14（checkout 的 .venv 或显式 DOTFILES_PYTHON），运行 `./tests/check.sh --suite all --strict` 或 Windows `./tests/check.ps1 -Suite all -Strict`。共享 manifest 定义 core、cross、dry-run、lint；strict 模式下适用主机缺少运行时即失败，不适用平台明确跳过。
 
 `tests/core/` 覆盖共享模型、规则和原生适配器。`test_snapshot.py` 覆盖声明依赖、归档完整性、恶意路径、平台拒绝、缺失/变化文件、排除、新增文件、空目录、复制恢复、冲突备份、重复恢复和 guarded journal。测试使用临时 HOME 和配置，不采集实际用户配置，不执行真实软件安装。
 
@@ -13,3 +13,5 @@ CI 仍禁用，原流程保留为 `.github/workflows/install.yml.disabled`，不
 ## 验收记录
 
 按日期和变更整理的实际环境、检查结果及未执行范围见 [验收记录](acceptance.md)。本页只维护可复用的测试说明。
+
+迁移依赖：测试前安装本地 dotfiles-viewer 0.2.x。统一声明及快照实现的单元测试由 Viewer 维护，本项目继续验证安装、镜像、会话和组合快照流程。旧 v1 快照和公开 journal 恢复命令不再受支持。

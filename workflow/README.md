@@ -1,6 +1,6 @@
 # 工作流与会话
 
-普通安装入口只执行 packages 阶段，按 `workflow/profiles/<name>.conf` 的 v3 软件集合选择安装规则。快照 restore 执行 packages → configuration，apply 快照仅执行 configuration；不自动改 shell、初始化持久镜像或调度 WSL。
+普通安装入口只执行 packages 阶段，按 Viewer 提供的 `workflow/profiles/<name>.conf` 的 v3 软件集合选择安装规则。快照 restore 执行 packages → configuration，apply 快照仅执行 configuration；不自动改 shell、初始化持久镜像或调度 WSL。
 
 ## 预览与执行
 
@@ -30,9 +30,9 @@ bash workflow/status.sh /path/to/session
 .\install\windows.ps1 -Resume C:\Backups\installation-session -DryRun
 ```
 
-只有新普通安装 request v3 会话可以续跑；续跑读取当前声明并重新探测，不因旧报告成功而跳过。旧 request v2 会话仍可查看，必须重新启动安装；旧 journal 恢复保留。
+只有新普通安装 request v3 会话可以续跑；续跑读取当前声明并重新探测，不因旧报告成功而跳过。旧 request v2 会话仍可查看，必须重新启动安装；历史 journal 恢复命令已移除，既有资料保留。
 
-快照会话使用归档声明，不接受安装入口 resume。解决失败原因后重新执行同一归档的 restore。输出包含 workflow 会话路径及配置 recovery journal，使用 apply 的 journal 恢复命令进行受保护恢复。
+快照会话使用归档声明，不接受安装入口 resume。解决失败原因后重新执行同一归档的 restore。输出包含 workflow 会话路径及 Viewer 配置结果；失败后查看备份资料并人工处理，不再提供 journal 恢复命令。
 
 ## 部署锁
 

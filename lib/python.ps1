@@ -10,7 +10,7 @@ function Initialize-DotfilesPython {
     if (-not $Resolved) { throw "Python interpreter unavailable: $Selected" }
     $Executable = [IO.Path]::GetFullPath($Resolved.Source)
     & $Executable -X utf8 -B $DotfilesPythonLauncher runtime-check | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw 'Python >=3.15 and declared dependencies must be prepared before invocation' }
+    if ($LASTEXITCODE -ne 0) { throw 'Python >=3.14 and declared dependencies must be prepared before invocation' }
     $script:DotfilesPythonExecutable = $Executable
     $env:DOTFILES_PYTHON = $Executable
 }

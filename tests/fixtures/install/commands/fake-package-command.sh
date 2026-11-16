@@ -2,6 +2,12 @@
 set -euo pipefail
 state="${DOTFILES_TEST_PACKAGE_STATE:?}"
 tool="${0##*/}"
+fixture_report() {
+  if [[ -f "$state/report-source" ]];then cat "$state/report-source";else printf '%s' "$state/results";fi
+}
+fixture_snapshot() {
+  [[ ! -f "$state/$1-snapshot" ]] || cp "$(fixture_report)" "$(cat "$state/$1-snapshot")"
+}
 { printf '%s' "$tool";printf ' <%s>' "$@";printf '\n'; } >> "$state/commands"
 if [[ "$tool" == winget.exe ]];then
   operation="$1";shift
@@ -12,15 +18,20 @@ if [[ "$tool" == winget.exe ]];then
   done
   [[ -n "$package" ]] || exit 91
   if [[ "$operation" == list ]];then
+    fixture_snapshot probe
     if [[ -f "$state/probe-exit" ]];then exit "$(cat "$state/probe-exit")";fi
     if [[ -f "$state/installed-$package" ]];then printf '%s 1.0\n' "$package";fi
     exit 0
   fi
   [[ "$operation" == install ]] || exit 91
   printf '%s\n' "$package" >> "$state/installs"
-  grep -q "^$package|running|" "$state/results" || exit 92
+  fixture_snapshot install
+  report_id="$package";[[ ! -f "$state/report-id" ]] || report_id="$(cat "$state/report-id")"
+  grep -q "^$report_id|running|" "$(fixture_report)" || exit 92
+  if [[ -f "$state/corrupt-stage" ]];then printf '# dotfiles|stage-result|99\nkey|value\n' > "$(cat "$state/corrupt-stage")";fi
+  [[ ! -f "$state/install-exit" ]] || exit "$(cat "$state/install-exit")"
   [[ ! -f "$state/fail-$package" ]] || exit 23
-  touch "$state/installed-$package"
+  [[ -f "$state/skip-evidence" ]] || touch "$state/installed-$package"
   exit 0
 fi
 if [[ "$tool" == sudo ]];then exec "$@";fi
@@ -29,15 +40,20 @@ if [[ "$tool" == apt-get ]];then
   shift 2
   for package in "$@";do
     printf '%s\n' "$package" >> "$state/installs"
-    grep -q "^$package|running|" "$state/results"
+    fixture_snapshot install
+    report_id="$package";[[ ! -f "$state/report-id" ]] || report_id="$(cat "$state/report-id")"
+    grep -q "^$report_id|running|" "$(fixture_report)"
+    [[ ! -f "$state/install-exit" ]] || exit "$(cat "$state/install-exit")"
     if [[ -f "$state/fail-$package" ]];then exit 23;fi
-    touch "$state/installed-$package"
+    [[ -f "$state/skip-evidence" ]] || touch "$state/installed-$package"
   done
   exit 0
 fi
+fixture_snapshot probe
 if [[ -f "$state/probe-delay" ]];then sleep 5;fi
 if [[ -f "$state/probe-exit" ]];then exit "$(cat "$state/probe-exit")";fi
 case "$tool" in
+  vswhere.exe) exit 0 ;;
   apt-cache)
     [[ "$1" == policy ]] || exit 91
     if [[ -f "$state/installed-$2" ]];then printf 'Candidate: 1.0\n';else printf 'Candidate: (none)\n';fi ;;

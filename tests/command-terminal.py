@@ -24,7 +24,9 @@ def exercise(command, reply, expected, workflow=False):
     sent = 0
     done = False
     try:
-        deadline = time.monotonic() + 15
+        # A workflow crosses Python/native request boundaries and publishes
+        # several snapshots; keep the bounded harness independent of CPU load.
+        deadline = time.monotonic() + (60 if workflow else 15)
         while time.monotonic() < deadline:
             if select.select([terminal], [], [], 0.1)[0]:
                 try:

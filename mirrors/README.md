@@ -50,6 +50,6 @@ Cargo/npm/system 等设置由独立适配器处理。配置必须提供全部支
 
 ## 实现边界
 
-`lib/mirrors.sh` 负责校验和计划组合；`handlers/` 决定目标和所有权；`renderers/` 只转换文本；`mirror_add_file` 负责保护检查并接入 apply 事务。不要让 renderer 执行命令或直接写目标。
+`lib/mirrors.sh` 是原生薄包装；`dotfiles_core/mirror_planning.py` 协调目标、所有权与计划组合，`mirror_rules.py` 负责文本规则。原生适配器提供观察，apply 原生事务负责受保护部署；renderer 不直接写目标。
 
 验证使用 `bash tests/mirrors.sh`，包含已有用户配置的保留、初始化、更新和恢复场景。脚本不验证镜像站的长期可用性，也不把下载站或服务健康作为安装成功标准。

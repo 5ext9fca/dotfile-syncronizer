@@ -16,6 +16,7 @@ if ($PSBoundParameters.ContainsKey('Profile') -and $Profile -cnotmatch '^[a-z][a
 if ($ChinaMirrors -and $NoChinaMirrors) { throw 'ChinaMirrors and NoChinaMirrors are mutually exclusive' }
 $RepoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 . (Join-Path $RepoRoot 'lib/workflow.ps1')
+Initialize-DotfilesPython
 $Options = @{
     RepoRoot = $RepoRoot; SessionId = $SessionId; DryRun = [bool]$DryRun; PlanOnly = [bool]$PlanOnly
     NoChinaMirrors = [bool]$NoChinaMirrors; ResultsPath = $ResultsPath; OnlyStage = $OnlyStage; FromStage = $FromStage

@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Mock functions are called by the imported executor.
-# shellcheck disable=SC2317
+# Real fake commands exercise the child-process adapter boundary.
 set -euo pipefail
 repo_root="$(cd -- "$(dirname -- "$0")/.." && pwd -P)"
 # shellcheck source=../lib/install-items.sh
@@ -85,10 +84,13 @@ printf '42\n' > "$state/probe-exit"
 if install_items_plan "$test_tmp/items" linux.apt 0 0 1 'linux.apt|0|||' > /dev/null;then exit 1;else [[ "$?" == 42 ]];fi
 rm "$state/probe-exit"
 # A successful command need not create discovery evidence; there is no post-check.
-install_dispatch() { :; }
+: > "$state/skip-evidence"
+printf 'first\n' > "$state/report-id"
 missing="$(install_record_update "$candidate" method apt packages absent action install reason requested)"
 install_items_execute "$missing" 'linux.apt|0|||' "$state/results" > "$test_tmp/no-postcheck.log"
 grep -q '^first|success|' "$state/results"
+[[ ! -f "$state/installed-absent" ]]
+rm "$state/skip-evidence" "$state/report-id"
 # Rust discovery requires the declared components, but never checks default/health.
 cat > "$test_tmp/commands/bin/rustup" <<'RUSTUP'
 #!/bin/bash

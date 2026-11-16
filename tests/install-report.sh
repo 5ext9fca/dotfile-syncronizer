@@ -54,7 +54,14 @@ fresh="$(install_resume_record "$plan" "$context")"
 [[ -z "$(install_field "$fresh" detected_method)" && -z "$(install_field "$fresh" detected_paths)" ]]
 [[ "$(install_field "$fresh" decision_reason)" == no-discovery-match ]]
 # Running and failed reports retain the decision; blocked items carry no stale evidence.
-install_dispatch() { cp "$test_tmp/report" "$test_tmp/running";return 23; }
+export DOTFILES_TEST_NATIVE_REPORT="$test_tmp/report" DOTFILES_TEST_NATIVE_SNAPSHOT="$test_tmp/running" DOTFILES_TEST_NATIVE_EXIT=23
+cat > "$test_tmp/brew" <<'BREW'
+#!/usr/bin/env bash
+set -euo pipefail
+cat "$DOTFILES_TEST_NATIVE_REPORT" > "$DOTFILES_TEST_NATIVE_SNAPSHOT"
+exit "$DOTFILES_TEST_NATIVE_EXIT"
+BREW
+chmod +x "$test_tmp/brew"
 set +e
 install_items_execute "$fresh"$'\n'"$(install_record_update "$plan" id later)" "$context" "$test_tmp/report" > "$test_tmp/output"
 code=$?
@@ -64,9 +71,11 @@ grep -Fq 'tool|running|0|resume-recheck-required|brew|||no-discovery-match' "$te
 grep -Eq '^tool\|failed\|[0-9]+\|exit-23\|brew\|\|\|no-discovery-match$' "$test_tmp/report"
 grep -Eq '^later\|blocked\|[0-9]+\|previous-failure\|brew\|\|\|$' "$test_tmp/report"
 # A failed resume probe retains identity but discards the previous plan evidence.
-install_resume_record() { cp "$test_tmp/report" "$test_tmp/checking";return 42; }
+export DOTFILES_TEST_NATIVE_SNAPSHOT="$test_tmp/checking" DOTFILES_TEST_NATIVE_EXIT=42
+# Keep stale evidence in the input while forcing a native inventory probe.
+probe_plan="$(install_record_update "$plan" discovery '')"
 set +e
-install_items_execute "$plan" "$context" "$test_tmp/report" 1 > "$test_tmp/output"
+install_items_execute "$probe_plan" "$context" "$test_tmp/report" 1 > "$test_tmp/output"
 code=$?
 set -e
 [[ "$code" == 42 ]]

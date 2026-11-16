@@ -158,10 +158,12 @@ Noto CJK 使用 [APT fonts-noto-cjk](https://packages.ubuntu.com/noble/fonts-not
 ./install/linux.sh --yes
 ```
 
-完整 workflow 先安装字体再部署桌面设置。原生 KDE 的配置预检需要 Python 3、`kreadconfig6` 或 `kreadconfig5`；GTK 未声明字体时还需相应 GTK 库和可访问的桌面显示，以读取有效默认字号。预览会报告缺失字体，但仍展示候选变更；实际配置部署会要求三种字体均可用。只选 configuration 阶段或独立 apply 不下载字体，见 [桌面字体部署](../apply/README.md#桌面字体)。
+完整 workflow 先安装字体再部署桌面设置。原生 KDE 的配置预检需要已选定的 Python ≥3.15、`kreadconfig6` 或 `kreadconfig5`；GTK 未声明字体时还需相应 GTK 库和可访问的桌面显示，以读取有效默认字号。预览会报告缺失字体，但仍展示候选变更；实际配置部署会要求所选 Fontconfig 声明的字体均可用。只选 configuration 阶段或独立 apply 不下载字体，见 [桌面字体部署](../apply/README.md#桌面字体)。
 
 ## Python 运行时
 
 共享核心使用 Python ≥3.15 和标准库；验证仅使用 3.15，不主动拒绝更高版本。请预先在当前 checkout 的 `.venv` 中准备解释器（Unix：`.venv/bin/python`；Windows：`.venv/Scripts/python.exe`），或将 `DOTFILES_PYTHON` 设为单个解释器路径。不会自动搜索其他环境或安装依赖。初始化后固定解释器路径并保留虚拟环境路径。Windows 与 WSL 分别准备各自的运行时。启动运行时独立于受管理的 Python 安装项。
 
 迁移参考为原项目 `696256f`，行为基线为本仓库 `bca3835`；原项目的私有配置不属于迁移内容。临时 UTF-8 JSON 协议仅用于当前调用，不是持久计划或重放接口。
+
+所有 plan、dry-run、resume 和 restore 同样要求运行时；帮助信息不要求。运行期间不得替换正在使用的虚拟环境。核心只使用标准库，不自动安装依赖。可通过预先安装的 Python 3.15 创建环境，例如 `python3.15 -m venv .venv`；Windows 使用已安装的 3.15 解释器运行同一 `-m venv .venv` 命令。

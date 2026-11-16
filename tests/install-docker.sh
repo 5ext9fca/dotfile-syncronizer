@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Recording handlers are invoked by the sourced dispatcher.
+# shellcheck disable=SC2317,SC2329
 set -euo pipefail
 repo_root="$(cd -- "$(dirname -- "$0")/.." && pwd -P)"
 source "$repo_root/lib/install-items.sh"

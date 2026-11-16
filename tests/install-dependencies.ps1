@@ -1,7 +1,9 @@
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '../lib/workflow.ps1')
+. (Join-Path $PSScriptRoot 'fixtures/install/commands/setup.ps1')
 $Temp = Join-Path ([IO.Path]::GetTempPath()) ('dependencies-' + [guid]::NewGuid().ToString('N'))
 $null = New-Item -ItemType Directory $Temp
+$PreviousPath = $env:PATH; $PreviousState = $env:DOTFILES_TEST_PACKAGE_STATE
 try {
     $Fixture = Join-Path $PSScriptRoot 'fixtures/install/method-dependencies'
     Copy-Item (Join-Path $Fixture '*.conf') $Temp
@@ -37,10 +39,15 @@ try {
     $Root = @{id='tool';method='winget';depends_on='runtime builder';install_depends_on='builder';discovery='manual:file:program_files:present'}
     $Runtime = @{id='runtime';method='winget';discovery='manual:file:program_files:present'}
     $Builder = @{id='builder';method='msvc';components='component'}
-    Set-Content (Join-Path $Temp 'vswhere.exe') 'probe sentinel'
-    function Invoke-InstallProbe { throw (New-ExecutionException 'Unexpected dependency probe' 42) }
+    $NativeFixture = New-FakeWinGet $Temp
+    Copy-Item (Join-Path $NativeFixture.Bin 'winget.exe') (Join-Path $Temp 'vswhere.exe')
+    Set-Content (Join-Path $NativeFixture.State 'probe-exit') 42
     $Context = @{ProgramFiles=$Temp;VsInstallerRoot=$Temp}
     $Plan = @($Builder,$Runtime,$Root)
+    foreach ($Item in $Plan) {
+        $Item.schema_version = Get-DataContractVersion install-plan
+        $Item.action = 'install'; $Item.reason = 'requested'
+    }
     if ((@(Select-WorkflowInstallPlan @{install='tool'} $Plan $Context normal).id -join ' ') -cne 'runtime tool') { throw 'Lazy discovery selected an unused builder' }
     $Code=0
     try { Select-WorkflowInstallPlan @{install='tool builder'} $Plan $Context normal } catch { $Code=Get-ExecutionExceptionCode $_.Exception }
@@ -50,4 +57,8 @@ try {
     try { Select-WorkflowInstallPlan @{install='tool'} $Plan $Context normal } catch { $Code=Get-ExecutionExceptionCode $_.Exception }
     if ($Code -ne 42) { throw 'Missing target did not select its builder' }
     Write-Host 'Method dependency merging, selected graphs and profile closures passed.'
-} finally { Remove-Item -LiteralPath $Temp -Recurse -Force }
+} finally {
+    $env:PATH = $PreviousPath; $env:DOTFILES_TEST_PACKAGE_STATE = $PreviousState
+    Remove-FakeWinGetLinks $NativeFixture
+    Remove-Item -LiteralPath $Temp -Recurse -Force
+}

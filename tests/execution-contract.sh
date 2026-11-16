@@ -39,12 +39,19 @@ workflow_context_set "$context" profile_name test
 workflow_context_set "$context" session_id test
 workflow_context_set "$context" dry_run 0
 workflow_context_set "$context" plan_only 0
-printf 'packages|1|requested|none|packages\nconfiguration|1|requested|none|configuration\n' > "$context/stages.plan"
-# The report is the third handler argument.
-workflow_execute_stage() {
-  grep -q '|packages|running|' "$(dirname "$3")/events.tsv"
-  return 130
-}
+workflow_context_set "$context" repo_root "$2/fixture"
+workflow_context_set "$context" config_home "$2/config"
+printf 'fish\n' > "$context/components"
+mkdir -p "$2/fixture/apply"
+cat > "$2/fixture/apply/apply.sh" <<'CHILD'
+#!/usr/bin/env bash
+set -euo pipefail
+# --no-mirrors --results REPORT --stage-result METADATA
+ grep -q '|configuration|running|' "$(dirname "$3")/events.tsv"
+exit 130
+CHILD
+chmod +x "$2/fixture/apply/apply.sh"
+printf 'configuration|1|requested|none|configuration\nshell|1|requested|none|shell\n' > "$context/stages.plan"
 workflow_run "$context"
 SCRIPT
 set +e
@@ -54,12 +61,12 @@ set -e
 [[ "$code" == 130 ]]
 expected_fields="$(awk -F '\t' '!/^#/ {print $1}' "$repo_root/workflow/schema/report-fields.tsv" | paste -sd '|' -)"
 [[ "$(head -n 1 "$work/result.tsv")" == "$expected_fields" ]]
-grep -q '|packages|interrupted|130|' "$work/result.tsv"
-grep -q '|configuration|blocked|' "$work/result.tsv"
-awk -F '|' 'NR>1 && ($11!=1 || $13!="packages") {exit 1}' "$work/result.tsv"
+grep -q '|configuration|interrupted|130|' "$work/result.tsv"
+grep -q '|shell|blocked|' "$work/result.tsv"
+awk -F '|' 'NR>1 && ($11!=1 || $13!="configuration") {exit 1}' "$work/result.tsv"
 "$BASH" "$repo_root/workflow/status.sh" "$work/session" > "$work/status"
 grep -q -- '--resume ' "$work/status"
 rm "$work/session/request.tsv"
 "$BASH" "$repo_root/workflow/status.sh" "$work/session" > "$work/legacy-status"
-grep -q -- '--from-stage packages' "$work/legacy-status"
+grep -q -- '--from-stage configuration' "$work/legacy-status"
 printf 'Execution outcomes, probes, dry-run and interrupted-session contracts passed.\n'

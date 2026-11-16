@@ -31,7 +31,7 @@ install_font_download_files sample https://example.invalid 'One.otf Two.otf' 'Sa
 [[ -f "$HOME/.local/share/fonts/sample/Two.otf" && -s "$test_tmp/cache" ]]
 if install_font_download_files sample https://example.invalid '../bad.otf' 'Sample Sans';then exit 1;fi
 # Presence requires every declared file; native-only items are excluded on WSL.
-raw="$(install_items_read "$repo_root/tests/fixtures/install/font-download" linux.apt)"
+raw="$(install_items_plan "$repo_root/tests/fixtures/install/font-download" linux.apt 0 0 0)"
 record="$(printf '%s\n' "$raw" | awk -F '|' '$1=="sample"')"
 for file in $(install_field "$record" font_files);do touch "$HOME/.local/share/fonts/sample/$file";done
 context="$(install_context_make linux.apt 0 '' '' "$test_tmp/backups")"
@@ -43,7 +43,7 @@ observed="$(install_evaluate_record "$record" "$context" normal)"
 plan="$(install_items_plan "$repo_root/tests/fixtures/install/font-download" linux.apt 0 1 0)"
 [[ "$(install_field "$plan" reason)" == environment-not-selected:wsl ]]
 touch "$HOME/.local/share/fonts/JetBrainsMonoNerdFont-Regular.ttf"
-raw="$(install_items_read "$repo_root/install/items" linux.dnf)"
+raw="$(install_items_plan "$repo_root/install/items" linux.dnf 0 0 0)"
 record="$(printf '%s\n' "$raw" | awk -F '|' '$1=="jetbrains-mono"')"
 observed="$(install_evaluate_record "$record" "$(install_context_make linux.dnf 0 '' '' "$test_tmp/backups")" normal)"
 [[ "$(install_field "$observed" detected_method)" == manual ]]

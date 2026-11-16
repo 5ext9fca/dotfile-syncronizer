@@ -26,23 +26,10 @@ function Test-InstallDiscoveryPath {
 }
 function Get-InstallDiscoveryObservation {
     param([hashtable]$Item, [hashtable]$Context)
-    if (-not $Item.discovery) { return @{ State=''; Method=''; Paths='' } }
-    $Groups = [ordered]@{}
-    foreach ($Spec in $Item.discovery.Split(';')) {
-        $Parts = ($Spec -split ':', 4)
-        if ($Parts.Count -ne 4) { throw 'Malformed discovery plan' }
-        $Method = $Parts[0]
-        if (-not $Groups.Contains($Method)) { $Groups[$Method] = @{ Matches=$true; Paths=@() } }
-        $Path = Resolve-InstallDiscoveryPath $Parts[1] $Parts[2] $Parts[3] $Context
-        if ($Path) { $Groups[$Method].Paths += $Path } else { $Groups[$Method].Matches = $false }
+    $Value = Invoke-DotfilesRequest install-discover-native @{
+        style='windows'; native_shell=(Get-Process -Id $PID).Path; specification=[string]$Item.discovery; native_context=$Context
     }
-    foreach ($Method in $Groups.Keys) {
-        if ($Groups[$Method].Matches) {
-            $Paths = ConvertTo-Json -Compress -InputObject ([string[]]$Groups[$Method].Paths)
-            return @{ State="discovered:$Method"; Method=$Method; Paths=$Paths.Replace('|', '\u007c') }
-        }
-    }
-    @{ State=''; Method=''; Paths='' }
+    ConvertTo-DotfilesRecord $Value
 }
 
 function Get-InstallDiscoveryState {

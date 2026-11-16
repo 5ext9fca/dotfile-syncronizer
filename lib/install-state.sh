@@ -58,31 +58,17 @@ install_resume_package_state() {
   return 0
 }
 
+install_query_state() {
+  local record="$1" context="$2" method
+  method="$(install_field "$record" method)"
+  case "$method" in
+    docker-ce|apt|apt-repository|dnf|dnf-copr|pacman|brew|cask|cargo) install_resume_package_state "$record" "$context" ;;
+    *) install_probe "$method" "$record" "$context" ;;
+  esac
+}
+
 install_evaluate_record() {
-  local record="$1" context="$2" mode="$3" method state probe_command command_present=0 decision action reason observation detected_method='' detected_paths='' decision_reason discovery
-  method="$(install_field "$record" method)";probe_command="$(install_field "$record" probe_command)"
-  discovery="$(install_field "$record" discovery)"
-  if [[ -n "$discovery" ]];then
-    observation="$(install_discovery_observation "$record" "$context")" || return
-    detected_method="${observation%%|*}";detected_paths="${observation#*|}"
-    state='';[[ -z "$detected_method" ]] || state="discovered:$detected_method"
-  else
-    case "$method" in
-      docker-ce|apt|apt-repository|dnf|dnf-copr|pacman|brew|cask|cargo) state="$(install_resume_package_state "$record" "$context")" || return ;;
-      *) state="$(install_probe "$method" "$record" "$context")" || return ;;
-    esac
-  fi
-  if [[ "$method" == docker-ce && "$state" != present ]];then install_docker_target "$context" >/dev/null || return;fi
-  decision="$(install_decide "$state" "$mode" "$probe_command" 0 "$discovery")" || return
-  if [[ "${decision%%|*}" != skip && -n "$probe_command" ]];then
-    if command -v "$probe_command" >/dev/null 2>&1;then
-      install_probe_capture "$method" "$probe_command" --version >/dev/null || return
-      command_present=1
-    fi
-  fi
-  decision="$(install_decide "$state" "$mode" "$probe_command" "$command_present" "$discovery")" || return
-  action="${decision%%|*}";decision="${decision#*|}";reason="${decision%%|*}";decision="${decision#*|}";state="${decision%%|*}";decision_reason="${decision#*|}"
-  install_record_update "$record" action "$action" reason "$reason" state "$state" detected_method "$detected_method" detected_paths "$detected_paths" decision_reason "$decision_reason"
+  dotfiles_request install-observe-native style unix native_shell "$BASH" item "$1" native_context "$2" mode "$3" policy_path "${install_policy_file_override:-$install_policy_library_dir/../install/schema/execution.tsv}"
 }
 
 # Query only installed toolchains/components; never invoke rustc (which may download).

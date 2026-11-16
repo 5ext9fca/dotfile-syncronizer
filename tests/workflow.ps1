@@ -32,40 +32,28 @@ try {
     Assert $Threw 'Conflicting stage selectors accepted'
     Assert ((Get-WorkflowStages -FromStage configuration) -join ',' -eq 'configuration,wsl') 'Retry stage order changed'
 
-    $script:Calls = @()
-    $Actions = @{
-        packages = { param($Context, $Report); if ($Context.SessionId -ne 'failure') { throw 'Missing explicit stage context' }; $script:Calls += 'packages'; 'id|status' | Set-Content $Report; Write-Host 'native package log'; throw 'package failed' }
-        git = { $script:Calls += 'git' }
-        configuration = { $script:Calls += 'configuration' }
-        wsl = { $script:Calls += 'wsl' }
-    }
+    # Exercise failure across the real native adapter boundary. Invalid apply
+    # declarations fail before any target mutation, and block the WSL stage.
+    $FailureContext = New-TestWorkflowContext failure @('configuration', 'wsl')
+    $FailureContext.RepoRoot = Join-Path $Temp 'missing-repository'
+    $FailureContext.ConfigRoot = Join-Path $Temp 'failed-config'
+    $FailureContext.Components = @('windows-terminal')
     $Threw = $false
-    try { Invoke-WorkflowStages -Context (New-TestWorkflowContext failure @('packages', 'git', 'configuration', 'wsl')) -Actions $Actions } catch { $Threw = $true }
+    try { Invoke-WorkflowStages -Context $FailureContext } catch { $Threw = $true }
     Assert $Threw 'Stage failure did not propagate'
-    Assert (($script:Calls -join ',') -eq 'packages') 'Downstream stage executed after failure'
     $Results = @(Get-Content (Join-Path $Temp 'failure.json') -Raw | ConvertFrom-Json)
-    Assert (($Results.status -join ',') -eq 'failed,blocked,blocked,blocked') 'Incorrect failure summary'
-    Assert ((Get-Content $Results[0].log -Raw) -match 'native package log') 'Stage log was not captured'
-    Assert (Test-Path $Results[0].report) 'Missing item report link'
-
-    $script:Calls = @()
-    $Actions.configuration = { param($Context, $Report, $StageResultPath); Set-StageResultValue $StageResultPath recovery_journal 'test-journal' -Append; $script:Calls += 'configuration'; Write-Host 'Recovery journal: forged-log-path'; 'component report' | Set-Content $Report }
-    Invoke-WorkflowStages -Context (New-TestWorkflowContext retry @('configuration')) -Actions $Actions
-    $Results = @(Get-Content (Join-Path $Temp 'retry.json') -Raw | ConvertFrom-Json)
-    Assert (($script:Calls -join ',') -eq 'configuration') 'Single-stage retry executed other stages'
-    Assert ($Results[2].recovery_journal -eq 'test-journal') 'Recovery journal missing from summary'
-    Invoke-WorkflowStages -Context (New-TestWorkflowContext dry @('configuration') $true $false) -Actions $Actions
-    Assert (-not (Test-Path (Join-Path $Temp 'dry'))) 'Dry run created persistent session'
-
-    # Future Git configuration files are protected even before they exist.
-    $Threw = $false
-    try { Assert-WorkflowOutput (Join-Path $Temp 'future-git-config') @((Join-Path $Temp 'future-git-config')) } catch { $Threw = $true }
-    Assert $Threw 'Report could overwrite a Git configuration created later in the workflow'
+    Assert (($Results.status -join ',') -eq 'skipped,skipped,failed,blocked') 'Incorrect failure summary'
+    Assert ((Get-Item $Results[2].log).Length -gt 0) 'Stage failure log was not captured'
+    Assert (-not (Test-Path $FailureContext.ConfigRoot)) 'Failed preflight mutated configuration'
 
     # Successful no-op stages must still have valid logs and summaries.
-    Invoke-WorkflowStages -Context (New-TestWorkflowContext noop @('git')) -Actions @{ git = {} }
+    $Noop = New-TestWorkflowContext noop @('git')
+    $Noop.ProgramFiles = $Temp
+    $Noop.DryRun = $true
+    $Noop.GitSettings = @()
+    Invoke-WorkflowStages -Context $Noop
     $Results = @(Get-Content (Join-Path $Temp 'noop.json') -Raw | ConvertFrom-Json)
-    Assert ($Results[1].status -eq 'success' -and (Test-Path $Results[1].log)) 'No-op stage has no log or failed'
+    Assert ($Results[1].status -eq 'planned' -and (Test-Path $Results[1].log)) 'No-op stage has no log or failed'
 
     # Exercise the real entry point in an isolated configuration-only dry run.
     $Saved = @{}
@@ -80,43 +68,21 @@ try {
         Assert ($Results[2].status -eq 'planned') 'Real entry did not plan configuration'
         Assert (-not (Test-Path $env:LOCALAPPDATA)) 'Entry dry run created a configuration directory'
         Assert (Test-Path $Results[2].report) 'Real entry lost its apply report'
+        $PlanText = (@(& (Join-Path $Repo 'install/windows.ps1') -OnlyStage configuration -PlanOnly -SessionId entry-plan) -join "`n") -split '\r?\n'
+        $Copies = @($PlanText | Where-Object { $_ -match '^windows-terminal\|copy\|' })
+        Assert ($Copies.Count -eq 1 -and $Copies[0].Split('|')[6] -match ':f:') 'Plan-only lost the source-state projection'
+        Assert (-not (Test-Path (Join-Path $env:DOTFILES_BACKUP_DIR 'workflow-entry-plan'))) 'Plan-only created a persistent session'
     } finally { foreach ($Name in $Saved.Keys) { [Environment]::SetEnvironmentVariable($Name, $Saved[$Name]) } }
 
-    # The full orchestration must finish every preflight before creating a
-    # session, deploying files or invoking a package manager.
-    $OriginalWslPlan = ${function:Get-WindowsWorkflowWslPlan}
-    $OriginalGitPath = ${function:Get-WindowsWorkflowGitPath}
-    $script:HostMutations = @()
-    function winget.exe { $script:HostMutations += 'winget'; throw 'Unexpected host mutation' }
-    function Get-WindowsWorkflowGitPath { param($Context); Join-Path $Context.ProgramFiles 'missing-git.exe' }
-    function Get-WindowsWorkflowWslPlan { param($Context); throw 'injected WSL preflight failure' }
-    $Options = @{
-        ProfileName = 'windows-full'; RepoRoot = $Repo; SessionId = 'preflight'; DryRun = $false; PlanOnly = $false; NoChinaMirrors = $false
-        ResultsPath = ''; OnlyStage = ''; FromStage = ''; ConfigRoot = Join-Path $Temp 'preflight-config'
-        BackupRoot = Join-Path $Temp 'preflight-backups'; ProgramFiles = Join-Path $Temp 'program-files'
-        VsInstallerRoot = Join-Path $Temp 'vs-installer'; GitConfigPaths = @((Join-Path $Temp 'git-config'))
-    }
-    try {
-        $Threw = $false
-        try { Invoke-WindowsWorkflow $Options } catch { $Threw = $_.Exception.Message -eq 'injected WSL preflight failure' }
-        Assert $Threw 'Full workflow did not reach or propagate WSL preflight failure'
-        Assert ($script:HostMutations.Count -eq 0) 'Windows mutated before WSL preflight completed'
-        Assert (-not (Test-Path $Options.ConfigRoot) -and -not (Test-Path $Options.BackupRoot)) 'Preflight failure created deployment/session directories'
-        function Get-WindowsWorkflowWslPlan { param($Context); @{ Text = @('Nested Linux plan'); Arguments = @() } }
-        $Options.PlanOnly = $true
-        $Text = @(Invoke-WindowsWorkflow $Options) -join "`n"
-        foreach ($Stage in @('packages', 'git', 'configuration', 'wsl')) { Assert ($Text.Contains("Stage ${Stage}:")) "Full plan omitted $Stage" }
-        Assert ($Text.Contains('Nested Linux plan') -and $script:HostMutations.Count -eq 0) 'Full plan failed to include nested inspection or mutated the host'
-        Assert (-not (Test-Path $Options.BackupRoot)) 'Plan-only created a session'
-    } finally {
-        Set-Item Function:Get-WindowsWorkflowWslPlan $OriginalWslPlan
-        Set-Item Function:Get-WindowsWorkflowGitPath $OriginalGitPath
-        Remove-Item Function:winget.exe
-    }
+    # Full stage prerequisite ordering and WSL failure blocking are covered by
+    # the core preflight tests; this suite exercises the native public entry
+    # above and the actual Windows/WSL argument boundary below.
 
     # Mock WSL only: each probe and argument is verified without launching a distro.
     $script:WslCalls = @(); $script:WslFail = $false
+    $HostPython = $env:DOTFILES_PYTHON
     function wsl.exe {
+        Assert (-not $env:DOTFILES_PYTHON) 'Host Python leaked to WSL'
         $script:WslCalls += ,@($args)
         $global:LASTEXITCODE = 0
         if ($script:WslFail) { $global:LASTEXITCODE = 9; return }
@@ -132,6 +98,7 @@ try {
         @{ ExitCode = $global:LASTEXITCODE; Stdout = $Output -join "`n"; Stderr = '' }
     }
     $Wsl = Get-WorkflowWslPlan -RepoRoot "\\wsl.localhost\FedoraLinux-44\home\test\quote' path" -Distribution FedoraLinux-44 -SessionId shared -RecordReports $true -NoChinaMirrors $true
+    Assert ($env:DOTFILES_PYTHON -eq $HostPython) 'Host runtime not restored after WSL query'
     Assert ($Wsl.Arguments -contains 'shared') 'Session identity not forwarded to WSL'
     Assert ($Wsl.Arguments -contains '--no-china-mirrors') 'Mirror flag not forwarded'
     Assert ($Wsl.Arguments -contains '/home/test/.dotfiles-workflow-shared.tsv') 'Nested dry-run report not requested'
@@ -146,6 +113,7 @@ try {
     Assert ($Artifacts.Count -eq 1 -and $Artifacts[0].value -like '*typed-child.tsv') 'Child report was not passed through structured stage results'
     # Arbitrary existing WSL2 distributions and guest profiles are data.
     function wsl.exe {
+        Assert (-not $env:DOTFILES_PYTHON) 'Host Python leaked to WSL'
         $script:WslCalls += ,@($args)
         $global:LASTEXITCODE = 0
         if ($args[0] -eq '--list') { '  CustomLinux Running 2' }

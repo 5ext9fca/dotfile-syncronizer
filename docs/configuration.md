@@ -230,6 +230,7 @@ Unix `home` 对应 `$HOME`，`config_home` 对应 `${XDG_CONFIG_HOME:-$HOME/.con
 
 | 变量 | 使用位置与含义 |
 | --- | --- |
+| `DOTFILES_PYTHON` | 单个启动解释器路径或命令名；未设置时仅使用当前 checkout 的平台 `.venv`，初始化后固定 |
 | `HOME`、`XDG_CONFIG_HOME` | Unix 用户目录与配置根；XDG 未设置时使用 `$HOME/.config` |
 | `USERPROFILE`、`APPDATA`、`LOCALAPPDATA` | Windows apply 的 home、app_data、local_app_data 根 |
 | `DOTFILES_BACKUP_DIR` | 安装/部署会话的备份父目录 |

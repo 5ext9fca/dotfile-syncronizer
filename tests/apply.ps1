@@ -74,7 +74,12 @@ try {
         Move-Item -LiteralPath $Source -Destination $Target -ErrorAction Stop
     }
     $Failed = $false
-    try { Invoke-ApplyPlan $Plan $Session $false } catch { $Failed = $true }
+    # Publication fault injection belongs to the retained native transaction.
+    New-Item -ItemType Directory -Path $Session -Force | Out-Null
+    $Journal = Join-Path $Session 'journal.jsonl'
+    '{"version":1}' | Set-Content -LiteralPath $Journal -Encoding UTF8
+    $Operation = @($Plan | Where-Object Action -eq 'copy')[0]
+    try { Invoke-ApplyTransaction $Operation $Journal 1 } catch { $Failed = $true }
     Assert-ApplyTest ($Failed -and (Get-Content (Join-Path $CaseRoot 'config/tool/nested/a file')) -eq 'old') 'Automatic rollback did not preserve original'
     . (Join-Path $RepoRoot 'apply/handlers/files.ps1')
 

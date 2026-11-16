@@ -13,6 +13,49 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class RuntimeTests(unittest.TestCase):
+    @unittest.skipIf(os.name == 'nt', 'Unix entry points')
+    def test_missing_runtime_precedes_deployment(self):
+        with tempfile.TemporaryDirectory() as directory:
+            marker = Path(directory) / 'lease-attempt'
+            env = dict(os.environ, DOTFILES_PYTHON='/missing/python')
+            for action in ('apply_execute_plan "" "$2/session" 0', 'apply_restore "$2/journal" 0'):
+                script = ('source "$1/lib/apply-items.sh"; marker="$2/lease-attempt"; '
+                          'deployment_run() { : > "$marker"; }; ' + action)
+                result = subprocess.run(['bash', '-c', script, 'test', str(ROOT), directory],
+                                        env=env, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertFalse(marker.exists())
+                self.assertEqual(list(Path(directory).iterdir()), [])
+
+    @unittest.skipIf(os.name == 'nt', 'Unix entry points')
+    def test_help_does_not_require_python(self):
+        result = subprocess.run(['bash', str(ROOT / 'apply/apply.sh'), '--help'],
+                                env=dict(os.environ, DOTFILES_PYTHON='/missing/python'),
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Usage:', result.stdout)
+
+    def test_powershell_wrapper(self):
+        powershell = shutil.which(os.environ.get('DOTFILES_TEST_POWERSHELL', 'pwsh'))
+        if powershell is None:
+            self.skipTest('PowerShell runtime unavailable')
+        script = '''param([string]$Repo, [string]$Python)
+$ErrorActionPreference = 'Stop'
+$env:DOTFILES_PYTHON = $Python
+. (Join-Path $Repo 'lib/python.ps1')
+Initialize-DotfilesPython
+$env:DOTFILES_PYTHON = '/missing'
+Invoke-DotfilesPython -Arguments @('runtime-check')
+exit $LASTEXITCODE
+'''
+        with tempfile.TemporaryDirectory(prefix='dotfiles 中文 ') as directory:
+            path = Path(directory) / 'runtime test.ps1'
+            path.write_text(script, encoding='utf-8-sig')
+            result = subprocess.run([powershell, '-NoProfile', '-File', str(path), str(ROOT), sys.executable],
+                                    capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), sys.executable)
+
     def test_version_policy(self):
         for version in ((2, 7), (3, 11), (3, 14)):
             with self.subTest(version=version), self.assertRaises(RuntimeRequirementError):
@@ -49,10 +92,24 @@ class RuntimeTests(unittest.TestCase):
         env = dict(os.environ, DOTFILES_PYTHON=sys.executable)
         result = subprocess.run(["bash", "-c", 'source "$1/lib/python.sh"; '
                                  'dotfiles_python_init || exit; '
-                                 'DOTFILES_PYTHON=/missing; dotfiles_python runtime-check',
+                                 'DOTFILES_PYTHON=/missing; PATH=/missing; dotfiles_python runtime-check',
                                  "test", str(ROOT)], env=env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), sys.executable)
+
+    @unittest.skipIf(os.name == 'nt', 'Unix wrapper')
+    def test_fixed_interpreter_reaches_nested_native_adapter(self):
+        with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / 'probe').write_text('present')
+            script = ('source "$1/lib/install-items.sh"; dotfiles_python_init || exit; '
+                      'DOTFILES_PYTHON=/missing/python; '
+                      'dotfiles_request install-discover-native style unix native_shell "$BASH" '
+                      'specification manual:file:home:probe native_context ""')
+            result = subprocess.run(['bash', '-c', script, 'test', str(ROOT)],
+                                    env=dict(os.environ, DOTFILES_PYTHON=sys.executable, HOME=directory),
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn('manual|[', result.stdout)
 
     @unittest.skipIf(os.name == "nt", "Unix wrapper")
     def test_missing_interpreter_has_no_fallback(self):

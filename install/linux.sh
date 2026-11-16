@@ -70,6 +70,7 @@ script_dir="$(cd -- "$(dirname -- "$0")" && pwd -P)"
 repo_root="$(cd -- "$script_dir/.." && pwd -P)"
 # shellcheck source=../lib/workflow.sh
 source "$repo_root/lib/workflow.sh"
+dotfiles_python_init
 config_home="${XDG_CONFIG_HOME:-${HOME:+$HOME/.config}}"
 backup_root="${DOTFILES_BACKUP_DIR:-$HOME/.dotfiles-backups}"
 

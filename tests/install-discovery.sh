@@ -6,7 +6,15 @@ test_tmp="$(mktemp -d)";trap 'rm -rf "$test_tmp"' EXIT
 context="macos|0|$test_tmp/bin/brew|$test_tmp|"
 fixtures="$repo_root/tests/fixtures/install/discovery"
 # Discovery must not invoke application/version or package inventory probes.
-install_probe_capture() { printf 'unexpected probe\n' >&2;return 99; }
+mkdir "$test_tmp/bin"
+export DOTFILES_TEST_NATIVE_CALLS="$test_tmp/dispatched" DOTFILES_TEST_NATIVE_EXIT=0
+cat > "$test_tmp/bin/brew" <<'BREW'
+#!/usr/bin/env bash
+printf '%s %s\n' "$0" "$*" >> "$DOTFILES_TEST_NATIVE_CALLS"
+[[ "$1" == install ]] || exit 99
+exit "$DOTFILES_TEST_NATIVE_EXIT"
+BREW
+chmod +x "$test_tmp/bin/brew"
 plan="$(install_items_plan "$fixtures" macos 0 0 1 "$context")"
 [[ "$(install_field "$plan" method)" == brew && "$(install_field "$plan" action)" == install ]]
 # A non-executable file satisfies file discovery; a directory at that path does not.
@@ -38,14 +46,14 @@ touch "$test_tmp/missing"
 rm "$test_tmp/bin/tool" "$test_tmp/missing"
 # Called by the imported preferred-method dispatcher.
 # shellcheck disable=SC2329
-install_run() { shift;printf '%s\n' "$*" > "$test_tmp/dispatched"; }
+[[ ! -e "$test_tmp/dispatched" ]]
 install_items_execute "$plan" "$context" > "$test_tmp/output"
 [[ "$(cat "$test_tmp/dispatched")" == "$test_tmp/bin/brew install tool" ]]
 # A failed preferred recipe is not retried through an alternate installer.
 : > "$test_tmp/dispatched"
 # Called by the imported preferred-method dispatcher.
 # shellcheck disable=SC2329
-install_run() { shift;printf '%s\n' "$*" >> "$test_tmp/dispatched";return 23; }
+export DOTFILES_TEST_NATIVE_EXIT=23
 set +e
 install_items_execute "$plan" "$context" > "$test_tmp/failed"
 code=$?

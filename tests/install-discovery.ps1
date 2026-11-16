@@ -1,13 +1,14 @@
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '../lib/install-items.ps1')
+. (Join-Path $PSScriptRoot 'fixtures/install/commands/setup.ps1')
 function Assert($Condition, $Message) { if (-not $Condition) { throw $Message } }
 $Temp = Join-Path ([IO.Path]::GetTempPath()) ('discovery-' + [guid]::NewGuid().ToString('N'))
 $null = New-Item -ItemType Directory $Temp
+$PreviousPath = $env:PATH; $PreviousState = $env:DOTFILES_TEST_PACKAGE_STATE
 try {
+    $Fixture = New-FakeWinGet $Temp
     $Context = @{ ProgramFiles = $Temp }
     $Fixtures = Join-Path $PSScriptRoot 'fixtures/install/discovery'
-    function Invoke-InstallProbe { throw 'Unexpected application or inventory probe' }
-    function Invoke-ManagedCommand { throw 'Unexpected command during discovery' }
     $Plan = @(Get-InstallPlan $Fixtures windows $false $false $true $Context)
     Assert ($Plan[0].method -eq 'winget' -and $Plan[0].action -eq 'install') 'Wrong preferred method or absent state'
     $null = New-Item -ItemType Directory (Join-Path $Temp 'Tool/tool.exe') -Force
@@ -27,14 +28,20 @@ try {
     Assert ((Get-WindowsResumeItem $Fresh $Context).action -eq 'install') 'Historical presence overrode removed files'
     $Roundtrip = @(ConvertFrom-InstallPlanText ((ConvertTo-InstallPlanText $Plan -Envelope) -join "`n"))
     Assert ($Roundtrip[0].discovery -eq $Plan[0].discovery) 'Discovery contract lost paths'
-    $script:Selected = ''
-    function Install-WinGetItem { param($Item, $Context); $script:Selected = $Item.packages }
-    Invoke-InstallPlan $Plan @{ DryRun=$false }
-    Assert ($script:Selected -eq 'Vendor.Tool') 'Wrong installation recipe selected'
-    $script:Selected = ''
-    function Install-WinGetItem { param($Item, $Context); $script:Selected += $Item.packages; throw (New-ExecutionException 'test failure' 23) }
+    Assert (-not (Test-Path (Join-Path $Fixture.State 'commands'))) 'Discovery queried an application or package inventory'
+    . (Join-Path $PSScriptRoot '../lib/install-command.ps1')
+    Set-Content (Join-Path $Fixture.State 'report-id') 'tool'
+    $Report = Join-Path $Fixture.State results; $Calls = Join-Path $Fixture.State installs
+    Invoke-InstallPlan $Plan @{ DryRun=$false } $Report
+    Assert ((Get-Content $Calls) -eq 'Vendor.Tool') 'Wrong installation recipe selected'
+    Clear-Content $Calls
+    Set-Content (Join-Path $Fixture.State 'install-exit') 23
     $Code = 0
-    try { Invoke-InstallPlan $Plan @{ DryRun=$false } } catch { $Code = Get-ExecutionExceptionCode $_.Exception }
-    Assert ($Code -eq 23 -and $script:Selected -eq 'Vendor.Tool') 'Preferred recipe failure caused fallback'
+    try { Invoke-InstallPlan $Plan @{ DryRun=$false } $Report } catch { $Code = Get-ExecutionExceptionCode $_.Exception }
+    Assert ($Code -eq 23 -and (Get-Content $Calls) -eq 'Vendor.Tool') 'Preferred recipe failure caused fallback'
     'PowerShell application discovery and current-state rechecks passed.'
-} finally { Remove-Item -LiteralPath $Temp -Recurse -Force }
+} finally {
+    $env:PATH = $PreviousPath; $env:DOTFILES_TEST_PACKAGE_STATE = $PreviousState
+    Remove-FakeWinGetLinks $Fixture
+    Remove-Item -LiteralPath $Temp -Recurse -Force
+}

@@ -43,4 +43,17 @@ mkdir "$DOTFILES_DEPLOYMENT_LOCK"
 printf '999999|unknown|token\n' > "$DOTFILES_DEPLOYMENT_LOCK/owner"
 if deployment_run 0 touch "$work/wrong" 2>/dev/null;then exit 1;fi
 [[ -f "$DOTFILES_DEPLOYMENT_LOCK/owner" && ! -e "$work/wrong" ]]
+# Public mutating entry points acquire the lease before planning or recovery.
+for entry in apply/apply.sh apply/mirrors.sh;do
+  set +e
+  "$BASH" "$repo_root/$entry" > "$work/entry.log" 2>&1
+  code=$?
+  set -e
+  [[ "$code" == 73 && -f "$DOTFILES_DEPLOYMENT_LOCK/owner" ]]
+done
+set +e
+"$BASH" "$repo_root/apply/apply.sh" --restore "$work/missing-journal" > "$work/entry.log" 2>&1
+code=$?
+set -e
+[[ "$code" == 73 && -f "$DOTFILES_DEPLOYMENT_LOCK/owner" ]]
 printf 'Deployment contention, nesting, read-only bypass and failure cleanup passed.\n'

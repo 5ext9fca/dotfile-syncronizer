@@ -3,8 +3,10 @@ $RepoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 . (Join-Path $RepoRoot 'lib/install-items.ps1')
 $FixtureRoot = Join-Path $PSScriptRoot 'fixtures/install'
 . (Join-Path $FixtureRoot 'materialize.ps1')
+. (Join-Path $FixtureRoot 'commands/setup.ps1')
 $TestTemp = Join-Path ([IO.Path]::GetTempPath()) ([guid]::NewGuid().ToString())
 New-Item -ItemType Directory -Path $TestTemp | Out-Null
+$PreviousPath = $env:PATH; $PreviousState = $env:DOTFILES_TEST_PACKAGE_STATE
 function Assert-True {
     param([bool]$Value, [string]$Message)
     if (-not $Value) { throw $Message }
@@ -34,12 +36,16 @@ try {
     }
     # Freeze a presence decision into a plan, then change the probe. Execution
     # must not call it again or install the previously detected item.
-    function Get-WindowsItemState { param($Item, $Context); return 'present' }
+    $Fixture = New-FakeWinGet $TestTemp
+    $null = New-Item -ItemType File (Join-Path $Fixture.State 'installed-Vendor.Tool')
     $Plan = @(Get-InstallPlan -Directory (Join-Path $FixtureRoot 'windows') -Inspect $true)
-    function Get-WindowsItemState { throw 'Unexpected execution-time probe' }
-    function Install-WinGetItem { throw 'Skipped item was executed' }
+    Remove-Item (Join-Path $Fixture.State 'installed-Vendor.Tool')
+    Clear-Content (Join-Path $Fixture.State 'commands')
     $Results = Join-Path $TestTemp 'skipped.txt'
+    Set-Content (Join-Path $Fixture.State 'report-source') $Results
+    Set-Content (Join-Path $Fixture.State 'report-id') 'tool'
     Invoke-InstallPlan -Plan $Plan -Context @{ DryRun = $false } -ResultsPath $Results
+    Assert-True (-not (Get-Content (Join-Path $Fixture.State 'commands'))) 'Execution repeated a frozen presence probe'
     Assert-True ([bool](Select-String -LiteralPath $Results -Pattern '^tool\|skipped\|')) 'Missing skip result'
 
     # Exercise the actual MSVC/Git presence logic with a read-only probe adapter.
@@ -73,7 +79,7 @@ try {
         $script:Calls += @{ Command = $Command; Arguments = $Arguments; SuccessCodes = $SuccessCodes; Method = $Method; Operation = $Operation }
     }
     $Plan = @(Get-InstallPlan -Directory (Join-Path $FixtureRoot 'windows') -Inspect $false)
-    Invoke-InstallPlan -Plan $Plan -Context @{ DryRun = $true }
+    Install-WinGetItem -Item $Plan[0] -Context @{ DryRun = $true }
     Assert-True ($script:Calls[0].Command -eq 'winget.exe') 'Wrong WinGet command'
     Assert-True (($script:Calls[0].Arguments -join '|') -eq 'install|--id|Vendor.Tool|--exact|--source|winget|--accept-package-agreements|--accept-source-agreements') 'Wrong WinGet arguments'
     $Msvc = @{ state = 'modify:C:/Build Tools'; workload = 'Test.Workload' }
@@ -82,13 +88,20 @@ try {
     Assert-True ($script:Calls[1].Method -eq 'msvc' -and $script:Calls[1].Operation -eq 'modify' -and 3010 -in (Get-InstallExecutionPolicy msvc modify).SuccessCodes) 'MSVC policy not selected'
 
     # Fail-fast results cover all items, including those blocked after the failure.
-    function Install-WinGetItem { throw 'Deliberate test failure' }
-    $Plan = @(@{ schema_version = (Get-DataContractVersion install-plan); id = 'first'; method = 'winget'; action = 'install'; reason = 'requested' },
-              @{ schema_version = (Get-DataContractVersion install-plan); id = 'second'; method = 'winget'; action = 'install'; reason = 'requested' })
+    . (Join-Path $RepoRoot 'lib/install-command.ps1')
+    Remove-Item (Join-Path $Fixture.State 'report-id')
+    Set-Content (Join-Path $Fixture.State 'install-exit') 23
+    $Plan = @(@{ schema_version = (Get-DataContractVersion install-plan); id = 'first'; method = 'winget'; packages='first'; source_repo='winget'; action = 'install'; reason = 'requested' },
+              @{ schema_version = (Get-DataContractVersion install-plan); id = 'second'; method = 'winget'; packages='second'; source_repo='winget'; action = 'install'; reason = 'requested' })
     $Results = Join-Path $TestTemp 'failure.txt'; $Failed = $false
+    Set-Content (Join-Path $Fixture.State 'report-source') $Results
     try { Invoke-InstallPlan -Plan $Plan -Context @{ DryRun = $false } -ResultsPath $Results } catch { $Failed = $true }
     Assert-True $Failed 'Execution failure was swallowed'
     Assert-True ([bool](Select-String -LiteralPath $Results -Pattern '^first\|failed\|')) 'Missing failure result'
     Assert-True ([bool](Select-String -LiteralPath $Results -Pattern '^second\|blocked\|')) 'Missing blocked result'
     Write-Host "Install item PowerShell tests passed ($Count shared cases plus execution checks)."
-} finally { Remove-Item -LiteralPath $TestTemp -Recurse -Force }
+} finally {
+    $env:PATH = $PreviousPath; $env:DOTFILES_TEST_PACKAGE_STATE = $PreviousState
+    Remove-FakeWinGetLinks $Fixture
+    Remove-Item -LiteralPath $TestTemp -Recurse -Force
+}

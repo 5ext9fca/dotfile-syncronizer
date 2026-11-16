@@ -13,20 +13,9 @@ function New-WindowsWorkflowContext {
     $Context.ProfileName = if ($Options.ProfileName) { $Options.ProfileName } else { 'windows' }
     $Context.SessionPath = Join-Path (Resolve-ApplyRoot $Context.BackupRoot) "workflow-$($Context.SessionId)"
     $Context.InstallContext = @{ DryRun = [bool]$Context.DryRun; ProgramFiles = $Context.ProgramFiles; VsInstallerRoot = $Context.VsInstallerRoot }
+    $Context.Roots = @{ home=$env:USERPROFILE; app_data=$env:APPDATA; local_app_data=$Context.ConfigRoot }
     $Context.GitSettings = @() # Personal identity is configured locally by the operator.
     $Context
-}
-function Get-WindowsWorkflowInstallPlan {
-    param([hashtable]$Context)
-    if ($Context.Profile.install -ceq 'none') { return }
-    $Plan = @(Get-InstallPlan -Directory (Join-Path $Context.RepoRoot 'install/items') -Inspect $false -Context $Context.InstallContext)
-    $Mode = if ($Context.Resume) { 'resume' } else { 'normal' }
-    Select-WorkflowInstallPlan $Context.Profile $Plan $Context.InstallContext $Mode
-}
-function Get-WindowsWorkflowApplyPlan {
-    param([hashtable]$Context)
-    if (-not $Context.Components.Count) { return }
-    Get-ApplyPlan -RepoRoot $Context.RepoRoot -Items (Join-Path $Context.RepoRoot 'apply/items') -Roots @{ home = $env:USERPROFILE; app_data = $env:APPDATA; local_app_data = $Context.ConfigRoot } -Session (Join-Path $Context.SessionPath 'configuration') -Components $Context.Components
 }
 function Get-WindowsWorkflowWslPlan {
     param([hashtable]$Context)
@@ -39,54 +28,16 @@ function Get-WindowsWorkflowGitPath {
 }
 function Initialize-WindowsWorkflow {
     param([hashtable]$Context)
-    Initialize-WorkflowResume $Context
-    $Context.Profile = Read-WorkflowProfile (Get-WorkflowProfilePath $Context.RepoRoot $Context.ProfileName)
-    if ($Context.Profile.shell -cne 'none') { throw 'Windows requires shell=none' }
-    if (-not $Context.MirrorsExplicit -and -not $Context.Resume) { $Context.NoChinaMirrors = $Context.Profile.mirrors -ceq 'none' }
-    $Context.StagePlan = @(Get-WorkflowStagePlan windows $Context.Profile $Context.OnlyStage $Context.FromStage (-not $Context.NoChinaMirrors))
-    Select-WorkflowResumeStages $Context
-    $Context.InstallPlan = @(Get-WindowsWorkflowInstallPlan $Context)
-    $Context.Components = @(Get-WorkflowComponents $Context.Profile $Context.InstallPlan @(Read-ApplyItems (Join-Path $Context.RepoRoot 'apply/items')))
-    $Enabled = @($Context.StagePlan | Where-Object { $_.Enabled })
-    $Protected = @($Context.RepoRoot)
-    foreach ($Definition in @(Read-ApplyItems (Join-Path $Context.RepoRoot 'apply/items'))) {
-        if ($Definition.id -cnotin $Context.Components -or $Definition.target_root -ceq 'home') { continue }
-        $Value = if ($Definition.target_root -ceq 'app_data') { $env:APPDATA } else { $Context.ConfigRoot }
-        # Validation/planning resolves only roots of selected components.
-        if ($Value -and [IO.Path]::IsPathRooted($Value)) { $Protected += Resolve-ApplyRoot $Value }
+    if ($Context.ResultsPath) { $Context.ResultsPath = [IO.Path]::GetFullPath($Context.ResultsPath) }
+    $Prepared = Invoke-DotfilesRequest workflow-preflight-native @{
+        style='windows';native_shell=(Get-Process -Id $PID).Path;native_context=$Context
     }
-    if ('git' -cin @($Enabled.Preflight)) { $Protected += $Context.GitConfigPaths }
-    Assert-WorkflowOutput $Context.SessionPath $Protected
-    if ($Context.ResultsPath) {
-        $Context.ResultsPath = [IO.Path]::GetFullPath($Context.ResultsPath)
-        Assert-WorkflowOutput $Context.ResultsPath ($Protected + @($Context.SessionPath))
-        if (-not (Test-Path -LiteralPath (Split-Path -Parent $Context.ResultsPath) -PathType Container)) { throw 'Results parent must exist' }
-    }
-    $Context.ApplyPlan = @(); $Context.WslPlan = $null
-    foreach ($Stage in $Enabled) {
-        switch -CaseSensitive ($Stage.Preflight) {
-            'packages' { if (-not (Get-Command winget.exe -ErrorAction SilentlyContinue)) { throw 'WinGet is required; install Microsoft App Installer first.' } }
-            'configuration' {
-                $Context.ApplyPlan = @(Get-WindowsWorkflowApplyPlan $Context)
-                $Targets = @($Context.ApplyPlan | ForEach-Object { $_.Target; if ($_.Source) { $_.Source } })
-                Assert-WorkflowOutput $Context.SessionPath $Targets
-                if ($Context.ResultsPath) { Assert-WorkflowOutput $Context.ResultsPath $Targets }
-            }
-            'wsl' { $Context.WslPlan = Get-WindowsWorkflowWslPlan $Context }
-            'git' {
-                $Git = Get-WindowsWorkflowGitPath $Context
-                if (-not (Test-Path -LiteralPath $Git)) {
-                    if ('packages' -cnotin @($Enabled.Action) -or -not @($Context.InstallPlan | Where-Object { $_.id -ceq 'git' }).Count) { throw 'Git stage requires an installed Git executable or the selected git item.' }
-                } else {
-                    foreach ($Setting in $Context.GitSettings) {
-                        $Probe = Invoke-ManagedCommand probe $Git @('config', '--global', '--get', $Setting.Key) -TimeoutSeconds (Get-InstallExecutionPolicy '*' probe).TimeoutSeconds
-                        if ($Probe.ExitCode -notin @(0, 1)) { throw (New-ExecutionException "Could not inspect Git $($Setting.Key) before installation." $Probe.ExitCode) }
-                    }
-                }
-            }
-            default { throw "Unsupported Windows prerequisite $($Stage.Preflight)" }
-        }
-    }
+    foreach ($Property in $Prepared.PSObject.Properties) { $Context[$Property.Name] = $Property.Value }
+    $Context.Profile = ConvertTo-DotfilesRecord $Context.Profile
+    $Context.InstallContext = ConvertTo-DotfilesRecord $Context.InstallContext
+    $Context.InstallPlan = @($Context.InstallPlan | ForEach-Object { ConvertTo-DotfilesRecord $_ })
+    $Context.ApplyPlan = @(ConvertFrom-ApplyRecords $Context.ApplyPlan)
+    if ($Context.WslPlan) { $Context.WslPlan = ConvertTo-DotfilesRecord $Context.WslPlan }
 }
 function Show-WindowsWorkflowPlan {
     param([hashtable]$Context)
@@ -107,9 +58,9 @@ function Get-WindowsWorkflowActions {
     @{
         packages = {
             param($Context, $Report, $StageResultPath)
-            $Context.InstallContext.ResumeItems = [bool]$Context.Resume
-            $Plan = @(Get-WindowsWorkflowInstallPlan $Context)
-            Invoke-InstallPlan -Plan $Plan -Context $Context.InstallContext -ResultsPath $Report
+            $null = Invoke-DotfilesRequest workflow-packages-native @{
+                style='windows';native_shell=(Get-Process -Id $PID).Path;native_context=$Context;report=$Report
+            } -Stream
         }
         git = {
             param($Context, $Report, $StageResultPath)
@@ -135,8 +86,11 @@ function Get-WindowsWorkflowActions {
         }
         configuration = {
             param($Context, $Report, $StageResultPath)
-            $Plan = @(Get-WindowsWorkflowApplyPlan $Context)
-            Invoke-ApplyPlan -Plan $Plan -Session (Join-Path $Context.SessionPath 'configuration') -DryRun $Context.DryRun -ResultsPath $Report -StageResultPath $StageResultPath
+            $null = Invoke-DotfilesRequest apply-workflow-native @{
+                style='windows'; native_shell=(Get-Process -Id $PID).Path; repo=$Context.RepoRoot;
+                config=$Context.ConfigRoot; roots=$Context.Roots; session=(Join-Path $Context.SessionPath 'configuration');
+                selection=@($Context.Components); dry=[bool]$Context.DryRun; results=$Report; metadata=$StageResultPath
+            } -Stream
         }
         wsl = {
             param($Context, $Report, $StageResultPath)
@@ -146,7 +100,7 @@ function Get-WindowsWorkflowActions {
             if ($Fresh.HostReport) { Set-StageResultValue $StageResultPath child_report $Fresh.HostReport -Append }
             # Guest dry-run must execute to validate its configuration; the guest
             # receives --dry-run above and owns the non-mutating policy.
-            $Result = Invoke-ManagedCommand mutation wsl.exe $Arguments -Stream
+            $Result = Invoke-WorkflowGuestCommand { Invoke-ManagedCommand mutation wsl.exe $Arguments -Stream }
             if ($Result.ExitCode -ne 0) { throw (New-ExecutionException "WSL workflow failed with exit code $($Result.ExitCode)" $Result.ExitCode) }
         }
     }
@@ -156,5 +110,5 @@ function Invoke-WindowsWorkflow {
     $Context = New-WindowsWorkflowContext $Options
     Initialize-WindowsWorkflow $Context
     if ($Context.PlanOnly) { Show-WindowsWorkflowPlan $Context; return }
-    Invoke-WorkflowStages -Context $Context -Actions (Get-WindowsWorkflowActions)
+    Invoke-WorkflowStages -Context $Context
 }

@@ -26,24 +26,28 @@ for platform in linux.apt linux.dnf linux.pacman macos windows; do
 done
 # Plan/execution use the same resolved URL; execution does not inspect again.
 plan="$(install_items_plan "$fixture_root/mirror" linux.apt 1 0 0)"
-install_run() { shift; printf 'COMMAND';printf ' <%s>' "$@";printf '\n'; }
 output="$(install_items_execute "$plan" 'linux.apt|1|||' "$test_tmp/results")"
-[[ "$output" == *'<PIP_INDEX_URL=https://mirror.example/simple>'* ]]
+[[ "$output" == *'PIP_INDEX_URL=https://mirror.example/simple'* ]]
 grep -q '^sample|planned|' "$test_tmp/results"
-# A failed handler must stop immediately, record failure and block subsequent work.
+# A failed native command must record failure and block subsequent work.
 plan="$(install_items_plan "$fixture_root/dependencies" linux.apt 0 0 0)"
-# shellcheck disable=SC2317,SC2329
-install_dispatch() { false; printf 'ERROR: continued after failure\n' > "$test_tmp/leaked"; }
+mkdir "$test_tmp/fake-bin"
+cat > "$test_tmp/fake-bin/sudo" <<'SUDO'
+#!/usr/bin/env bash
+exit "${DOTFILES_TEST_INSTALL_EXIT:?}"
+SUDO
+chmod +x "$test_tmp/fake-bin/sudo"
+export PATH="$test_tmp/fake-bin:$PATH" DOTFILES_TEST_INSTALL_EXIT=1
 set +e
 install_items_execute "$plan" 'linux.apt|0|||' "$test_tmp/failure" > "$test_tmp/output"
 status=$?
 set -e
-[[ "$status" == 1 && ! -e "$test_tmp/leaked" ]]
+[[ "$status" == 1 ]]
 grep -q '^first|failed|' "$test_tmp/failure"
 grep -q '^middle|blocked|' "$test_tmp/failure"
 grep -q '^last|blocked|' "$test_tmp/failure"
 # A GUI bootstrap may defer installation without deploying later items.
-install_dispatch() { return 75; }
+export DOTFILES_TEST_INSTALL_EXIT=75
 set +e
 install_items_execute "$plan" 'macos|0|||' "$test_tmp/deferred" > "$test_tmp/output"
 status=$?

@@ -1,6 +1,6 @@
 # 阶段、报告与续跑
 
-workflow 将安装项与配置组件关联起来，先完成所选阶段的预检，再按阶段执行。字段定义见 [配置语义](../docs/configuration.md)，实现入口是 `lib/workflow.sh` / `.ps1`。
+workflow 将安装项与配置组件关联起来，先完成所选阶段的预检，再按阶段执行。字段定义见 [配置语义](../docs/configuration.md)，原生入口是 `lib/workflow.sh` / `.ps1`，共享规则、预检及会话调度由 `dotfiles_core/workflow_*.py` 实现。所有操作（包括状态查询和续跑）需要已准备的 [Python 运行时](../install/README.md#python-运行时)。
 
 ## 阶段选择
 

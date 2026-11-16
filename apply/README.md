@@ -103,7 +103,7 @@ Fontconfig 规则通过显式映射硬链接，按请求 family 区分：sans-se
 
 修改 `configs/fontconfig/60-dotfiles-fonts.conf` 中的 family 即可改变上述行为，无需修改 Python/Bash；所选字体仍须由安装声明或用户自行安装。只保留 Fontconfig 部署、停用 KDE/GTK 修改时，从 apply 项移除 `renderer=desktop-fonts`；`condition=linux-kde` 仍决定整个组件的适用环境。更改安装集合使用 `install/items/` 和 workflow profile。详见 [Fontconfig 用户配置](https://fontconfig.pages.freedesktop.org/fontconfig/fontconfig-user.html)。
 
-渲染器读取当前 `kdeglobals`、`gtk-3.0/settings.ini`、`gtk-4.0/settings.ini`，只更改托管字体 family；保留字号、字体参数、缩放、抗锯齿、其他键和注释及文件权限。KDE 未声明项先通过 KConfig 查询继承设置，仍无值时使用 Plasma 内置默认字号（常规 10、小字号 8）；GTK 缺失项通过运行中的 GTK 读取默认字体。无法安全解析、重复托管键、不可变 KConfig 标记或设置路径为符号链接时明确失败。Python 3 和 KConfig 读取工具必须在配置预检时可用。
+渲染器读取当前 `kdeglobals`、`gtk-3.0/settings.ini`、`gtk-4.0/settings.ini`，只更改托管字体 family；保留字号、字体参数、缩放、抗锯齿、其他键和注释及文件权限。KDE 未声明项先通过 KConfig 查询继承设置，仍无值时使用 Plasma 内置默认字号（常规 10、小字号 8）；GTK 缺失项通过运行中的 GTK 读取默认字体。无法安全解析、重复托管键、不可变 KConfig 标记或设置路径为符号链接时明确失败。已选定的 Python ≥3.15 运行时和 KConfig 读取工具必须在配置预检时可用。
 
 候选文件使用现有 copy 操作，内容相同即跳过；冲突备份、当前操作失败回滚、journal、部署锁和显式受保护恢复均复用现有契约。预览只在临时目录生成候选文件，并打印字体键变化，不下载或刷新缓存，不修改用户设置。设置在应用重启或重新登录后生效，不自动退出会话。WezTerm 保留已有回退链；Fish、终端 Helix 和 Zellij 继承终端字体，IDE 由用户自行配置。
 
@@ -117,3 +117,5 @@ fc-match 'monospace:charset=4e2d'
 ```
 
 预期依次为 Noto CJK、Noto CJK、JetBrainsMono、Noto CJK。中文验收使用字符条件，单独 `lang=zh-cn` 不保证选到含中文字符的第一个 family。另需在 KDE、GTK、浏览器默认正文和 WezTerm 检查中文标点、粗体、图标和表格对齐。
+
+规划与执行调度由 `dotfiles_core/apply_*.py` 统一负责；原生适配器保留完整事务、journal、恢复和部署租约。独立 apply、plan、dry-run 与 restore 都需要预先准备 [Python 运行时](../install/README.md#python-运行时)。

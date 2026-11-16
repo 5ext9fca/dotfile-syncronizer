@@ -12,7 +12,14 @@ while IFS=$'\t' read -r name status;do
   else [[ "$status" == invalid && ! -s "$work/actual" ]];fi
 done < "$repo_root/tests/fixtures/contracts/cases.tsv"
 plan="$(install_items_plan "$repo_root/tests/fixtures/install/dependencies" linux.apt 0 0 0)"
-install_dispatch() { touch "$work/executed"; }
+mkdir "$work/bin"
+cat > "$work/bin/sudo" <<'SUDO'
+#!/usr/bin/env bash
+: > "$DOTFILES_TEST_EXECUTED"
+exit 0
+SUDO
+chmod +x "$work/bin/sudo"
+export PATH="$work/bin:$PATH" DOTFILES_TEST_EXECUTED="$work/executed"
 bad="$(printf '%s\n' "$plan" | awk -F '|' -v OFS='|' 'NR==2 {$NF=9} {print}')"
 if install_items_execute "$bad" 'linux.apt|0|||' >/dev/null 2>&1;then exit 1;fi
 [[ ! -e "$work/executed" ]]
@@ -28,14 +35,23 @@ source "$repo_root/lib/deployment-lock.sh"
 # Console text cannot forge artifacts; paths containing commas remain intact in metadata.
 workflow_preflight() { :; }
 workflow_confirm() { :; }
-workflow_execute_stage() {
-  printf 'Recovery journal: forged\nWorkflow report: forged\n'
-  stage_result_artifact "$4" recovery_journal "$work/a, b/journal"
-  stage_result_artifact "$4" child_report "$work/child/report"
-  return 23
-}
+mkdir -p "$work/fixture/apply"
+cat > "$work/fixture/apply/apply.sh" <<'CHILD'
+#!/usr/bin/env bash
+set -euo pipefail
+source "$DOTFILES_TEST_REPO/lib/stage-result.sh"
+printf 'Recovery journal: forged\nWorkflow report: forged\n'
+stage_result_artifact "$5" recovery_journal "$DOTFILES_TEST_WORK/a, b/journal"
+stage_result_artifact "$5" child_report "$DOTFILES_TEST_WORK/child/report"
+exit 23
+CHILD
+chmod +x "$work/fixture/apply/apply.sh"
+export DOTFILES_TEST_REPO="$repo_root" DOTFILES_TEST_WORK="$work"
 context="$work/context";mkdir "$context"
 for pair in 'dry_run 0' 'plan_only 0' 'profile_name linux' 'platform linux.apt' 'china_mirrors 0' 'session_id test';do read -r key value <<< "$pair";workflow_context_set "$context" "$key" "$value";done
+workflow_context_set "$context" repo_root "$work/fixture"
+workflow_context_set "$context" config_home "$work/config"
+printf 'fish\n' > "$context/components"
 workflow_context_set "$context" session_path "$work/workflow"
 workflow_context_set "$context" results_path "$work/result.tsv"
 printf 'configuration|1||configuration|configuration\nshell|1||shell|shell\n' > "$context/stages.plan"
@@ -49,7 +65,10 @@ set -e
 if grep -q forged "$work/result.tsv";then exit 1;fi
 grep -q '|shell|blocked|' "$work/result.tsv"
 # A malformed sidecar cannot turn a successful action into a trusted stage.
-workflow_execute_stage() { printf '# dotfiles|stage-result|99\nkey|value\n' > "$4"; }
+cat > "$work/fixture/apply/apply.sh" <<'CHILD'
+#!/usr/bin/env bash
+printf '# dotfiles|stage-result|99\nkey|value\n' > "$5"
+CHILD
 rm -rf "$context/runtime"
 workflow_context_set "$context" session_path "$work/corrupt-workflow"
 workflow_context_set "$context" results_path "$work/corrupt-result.tsv"

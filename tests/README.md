@@ -28,8 +28,8 @@
 
 ## 运行时
 
-- Unix core：Bash；Python >=3.11（进程与终端契约测试）。
-- Windows core：PowerShell 5.1 或 7，同样需要 Python >=3.11。
+- Unix core：Bash；Python 3.15（共享核心、进程与终端契约测试）。
+- Windows core：PowerShell 5.1 或 7，同样需要 Python 3.15。
 - cross：按 manifest 需要 Bash 和 PowerShell；Linux 上 PowerShell 测试不能代替 Windows 原生验证。
 - lint：ShellCheck；每个脚本独立检查，不递归展开 sourced 测试覆盖函数，以免旧版本分析器耗尽内存。
 
@@ -86,10 +86,18 @@ Fedora job 使用 `registry.fedoraproject.org/fedora:latest` 容器，安装测�
 
 每行六个 Tab 分隔字段：ID、suite、host 集合、runtime、仓库相对 entry、arguments。host 使用 linux/macos/windows，多个 host 用空格分隔；runtime 为 bash/powershell/python。Python entry 可为单个脚本，也可为 unittest discovery 目录。arguments 为字面量空格分隔词，`-` 表示无参数，不执行 shell 表达式或引号分组。
 
-共享解析规则优先使用共同夹具，再分别验证两端实现。新增检查应验证可观察的行为或失败边界，不只复述实现。
+共享解析规则优先使用共同夹具验证 Python 核心，再分别验证两端原生适配器。新增检查应验证可观察的行为或失败边界，不只复述实现。
 
 重复运行回归由 `install-resume.*`、`install-dependencies.*` 和 `workflow.sh` 覆盖：普通运行与续跑共享存在性检查、移除证据后重装、新声明入选、发现失败阻断、安装命令成功但不创建产物仍成功、公共/安装专用依赖区分、独立根项目保留、未选中工具不执行探测，以及无待安装项时不更新包索引或系统。
 
 `tests/profile-roots.sh` / `.ps1` 覆盖纯配置默认、none 集合、方案名称、受控目标根、跨根冲突；Unix 还验证隔离 CLI、重复部署、备份和恢复。WSL 分发和 guest profile 的隔离参数检查位于 `tests/workflow.ps1`，不能代替原生 Windows/WSL 验证。
 
 Python 核心测试位于 `tests/core/`。检查工具默认使用本 checkout 的 `.venv`，也可显式设置 `DOTFILES_PYTHON` 或测试专用的 `DOTFILES_TEST_PYTHON`；Python 验证要求 3.15，缺失或版本不符时 strict 检查失败。运行时与协议测试涵盖固定解释器、仓库外启动、中文与空格路径、严格 JSON、操作允许列表和进程退出码一致性。
+
+## Python 迁移验证记录（2026-11-16）
+
+行为基线为本仓库 `bca3835`，通用实现参考为原项目 `696256f`。验证主机为 macOS，使用 Bash 3.2.57 和通过 `DOTFILES_PYTHON` 显式选择的 Python 3.15.0a8；不是 Python 正式版验证，未将参考仓库的解释器路径写入默认配置。
+
+已运行 `./tests/check.sh --suite core --strict`（31 项通过、0 项失败、25 项平台不适用跳过）和 `python -B -m unittest discover -s tests/core`（146 项，1 项因 PowerShell 不可用跳过），以及默认和 `macos-full` 各自的镜像/上游四组 macOS dry-run。目标根、字体下载、解释输出和终端输入的专项回归通过；测试仅在隔离目录执行文件事务及假安装命令，主机入口仅运行 dry-run。
+
+全量 `--suite all --strict` 尚不能通过：本机缺少 `pwsh` 和 ShellCheck，保留 strict 失败规则。沙箱对 `/dev/tty` 和主机目录写权限观察的限制已通过允许对应访问的重跑验证。Linux 默认/完整方案、PowerShell 5.1 原生 Windows 入口、Windows/WSL2 联动未验证；共享夹具和模拟观察不能替代这些原生检查。CI 仍为 `.disabled`，未运行。

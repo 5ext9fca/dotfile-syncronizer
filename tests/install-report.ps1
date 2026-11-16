@@ -1,8 +1,10 @@
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '../lib/workflow.ps1')
+. (Join-Path $PSScriptRoot 'fixtures/install/commands/setup.ps1')
 function Assert($Condition, $Message) { if (-not $Condition) { throw $Message } }
 $Temp = Join-Path ([IO.Path]::GetTempPath()) ('reports-' + [guid]::NewGuid().ToString('N'))
 $null = New-Item -ItemType Directory $Temp
+$PreviousPath = $env:PATH; $PreviousState = $env:DOTFILES_TEST_PACKAGE_STATE
 try {
     $Fixtures = Join-Path $PSScriptRoot 'fixtures/install-reports'
     foreach ($Line in Get-Content -LiteralPath (Join-Path $Fixtures 'cases.tsv')) {
@@ -59,7 +61,11 @@ try {
     Remove-Item $File
     $Fresh = Get-WindowsResumeItem $Plan[0] $Context
     Assert (-not $Fresh.detected_method -and -not $Fresh.detected_paths -and $Fresh.decision_reason -eq 'no-discovery-match') 'Removed/partial files retained evidence'
-    function Install-WinGetItem { Copy-Item $Report (Join-Path $Temp running.tsv); throw (New-ExecutionException 'test' 23) }
+    $Fixture = New-FakeWinGet $Temp
+    Set-Content (Join-Path $Fixture.State 'report-source') $Report
+    Set-Content (Join-Path $Fixture.State 'report-id') 'tool'
+    Set-Content (Join-Path $Fixture.State 'install-snapshot') (Join-Path $Temp running.tsv)
+    Set-Content (Join-Path $Fixture.State 'install-exit') 23
     $Later = $Plan[0].Clone(); $Later.id = 'later'; $Code = 0
     try { Invoke-InstallPlan @($Fresh, $Later) $Context $Report } catch { $Code = Get-ExecutionExceptionCode $_.Exception }
     Assert ($Code -eq 23) 'Wrong failure code'
@@ -74,13 +80,20 @@ try {
         $Excluded = @{ reason=$Reason; action='skip'; method='winget' }
         Assert ((Get-WindowsResumeItem $Excluded $Context).reason -eq $Reason) 'Resume lost environment gate'
     }
-    function Get-WindowsResumeItem { Copy-Item $Report (Join-Path $Temp checking.tsv); throw (New-ExecutionException 'probe failure' 42) }
+    . (Join-Path $PSScriptRoot '../lib/install-state.ps1')
+    Set-Content (Join-Path $Fixture.State 'probe-snapshot') (Join-Path $Temp checking.tsv)
+    Set-Content (Join-Path $Fixture.State 'probe-exit') 42
+    $ProbePlan = $Plan[0].Clone(); $ProbePlan.discovery = ''
     $Context.ResumeItems = $true; $Code = 0
-    try { Invoke-InstallPlan $Plan $Context $Report } catch { $Code = Get-ExecutionExceptionCode $_.Exception }
+    try { Invoke-InstallPlan @($ProbePlan) $Context $Report } catch { $Code = Get-ExecutionExceptionCode $_.Exception }
     Assert ($Code -eq 42) 'Wrong probe failure code'
     $Checking = @(Read-InstallResult (Get-Content (Join-Path $Temp checking.tsv) -Raw))[0]
     Assert ($Checking.reason -eq 'checking-current-state' -and -not $Checking.detected_method -and -not $Checking.decision_reason) 'Checking snapshot retained stale evidence'
     $Failed = @(Read-InstallResult (Get-Content $Report -Raw))[0]
     Assert ($Failed.id -eq 'tool' -and $Failed.reason -eq 'exit-42' -and -not $Failed.detected_method -and -not $Failed.detected_paths -and -not $Failed.decision_reason) 'Failed probe published stale evidence'
     Write-Host 'Installation evidence, report snapshots, historical readers and status explanation passed.'
-} finally { Remove-Item -LiteralPath $Temp -Recurse -Force }
+} finally {
+    $env:PATH = $PreviousPath; $env:DOTFILES_TEST_PACKAGE_STATE = $PreviousState
+    Remove-FakeWinGetLinks $Fixture
+    Remove-Item -LiteralPath $Temp -Recurse -Force
+}

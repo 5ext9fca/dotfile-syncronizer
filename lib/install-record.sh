@@ -1,6 +1,7 @@
 # shellcheck shell=bash
 # Plan field order and versions belong exclusively to the data contract.
-install_field_names="$(contract_fields install-plan | tr '|' ' ')"
+# Read serialization metadata without starting the runtime during --help.
+install_field_names="$(paste -sd ' ' "${install_library_dir:?}/../contracts/schema/install-plan.fields")"
 install_field() {
   local record="$1" field="$2"
   printf '%s\n' "$record" | awk -F '|' -v fields="$install_field_names" -v wanted="$field" '

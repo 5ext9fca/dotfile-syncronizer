@@ -59,22 +59,7 @@ install_discovery_match_path() {
 }
 install_discovery_path_exists() { install_discovery_match_path "$@" >/dev/null; }
 install_discovery_observation() {
-  local record="$1" context="$2" spec method kind root relative candidate seen=' ' matches code paths path
-  spec="$(install_field "$record" discovery)"
-  # Each method is one conjunction of paths; methods are alternatives.
-  while IFS=: read -r method kind root relative;do
-    [[ -n "$method" && "$seen" != *" $method "* ]] || continue
-    seen="$seen$method "
-    matches=1;paths=''
-    while IFS=: read -r candidate kind root relative;do
-      [[ "$candidate" == "$method" ]] || continue
-      if path="$(install_discovery_match_path "$kind" "$root" "$relative" "$context")";then
-        paths="$paths${paths:+,}$path"
-      else code=$?;[[ "$code" == 1 ]] || return "$code";matches=0;fi
-    done < <(printf '%s\n' "$spec" | tr ';' '\n')
-    if [[ "$matches" == 1 ]];then printf '%s|[%s]\n' "$method" "$paths";return 0;fi
-  done < <(printf '%s\n' "$spec" | tr ';' '\n')
-  printf '|\n'
+  dotfiles_request install-discover-native style unix native_shell "$BASH" specification "$(install_field "$1" discovery)" native_context "$2"
 }
 install_discover() {
   local observation method

@@ -75,8 +75,12 @@ apply_publish() {
   apply_exists "$2" && return 1
   apply_command "$3" mv -n "$1" "$2"
 }
+# Inject faults inside the retained native transaction boundary.
+record="$(printf '%s\n' "$plan" | awk -F '|' '$2=="hardlink" {print;exit}')"
+mkdir -p "$session"
+printf '# dotfiles-apply-journal-v1\n' > "$session/journal.tsv"
 set +e
-apply_execute_plan "$plan" "$session" 0 "$work/results" > "$work/log" 2> "$work/error"
+apply_transaction "$record" "$session/journal.tsv" 1 > "$work/log" 2> "$work/error"
 status=$?
 set -e
 [[ "$status" == 23 && "$(cat "$case_root/config/tool/nested/a file")" == old ]] || fail 'failed replacement was not rolled back'
@@ -138,6 +142,8 @@ apply_command() {
   if [[ "$privilege" == sudo && "$1" == chown ]];then printf '%s\n' "$2" > "$work/chown-owner";return 0;fi
   "$@"
 }
-apply_execute_plan "$record" "$session" 0 > "$work/log"
+mkdir -p "$session"
+printf '# dotfiles-apply-journal-v1\n' > "$session/journal.tsv"
+apply_transaction "$record" "$session/journal.tsv" 1 > "$work/log"
 [[ "$(cat "$work/chown-owner")" == "$expected_owner" ]] || fail 'system replacement ownership was not preserved'
 printf 'Unix apply planning, transaction and recovery tests passed.\n'

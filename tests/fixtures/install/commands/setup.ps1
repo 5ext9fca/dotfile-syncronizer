@@ -12,7 +12,7 @@ function New-FakeWinGet {
     } else {
         Copy-Item (Join-Path $PSScriptRoot 'fake-package-command.sh') $Target
         & /bin/chmod +x $Target
-        foreach ($Name in @('bash','cat','grep','touch','sleep')) {
+        foreach ($Name in @('bash','cat','grep','touch','sleep','cp','id')) {
             $Source = (Get-Command $Name -CommandType Application | Select-Object -First 1).Source
             $null = New-Item -ItemType SymbolicLink -Path (Join-Path $Bin $Name) -Target $Source
         }
@@ -20,4 +20,12 @@ function New-FakeWinGet {
     $env:DOTFILES_TEST_PACKAGE_STATE = $State
     $env:PATH = $Bin
     @{ Bin=$Bin; State=$State }
+}
+
+function Remove-FakeWinGetLinks {
+    param($Fixture)
+    if ($Fixture -and $env:OS -ne 'Windows_NT' -and (Test-Path -LiteralPath $Fixture.Bin)) {
+        # Delete the link itself; PowerShell -Force can try to change the target mode.
+        Get-ChildItem -LiteralPath $Fixture.Bin | Where-Object { $_.LinkType -eq 'SymbolicLink' } | ForEach-Object { [IO.File]::Delete($_.FullName) }
+    }
 }

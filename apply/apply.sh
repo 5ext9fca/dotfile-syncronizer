@@ -46,6 +46,7 @@ while (( $# ));do
   esac
   shift
 done
+dotfiles_python_init
 if [[ -n "$restore_journal" ]];then
   [[ -z "$selection" && -z "$profile_name" ]] || { printf 'error: restore cannot select components\n' >&2;exit 2; }
   apply_restore "$restore_journal" "$((dry_run || plan_only))"
@@ -60,18 +61,9 @@ if [[ -z "$selection" ]];then
   profile="$(workflow_read_profile "$(workflow_profile_path "$repo_root" "$profile_name")")"
   selection="$(workflow_profile_value "$profile" components | tr ' ' '\n' | cut -d : -f1)"
 fi
-config_home="${XDG_CONFIG_HOME:-${HOME:+$HOME/.config}}"
-backup_root="$(apply_resolve_root "${DOTFILES_BACKUP_DIR:-$HOME/.dotfiles-backups}")"
-session="$(apply_session_path "$backup_root")"
-scratch="$(mktemp -d)"
-trap 'rm -rf "$scratch"' EXIT
-plan="$(apply_make_plan "$repo_root" "$script_dir/items" "$config_home" "$session" "$selection" "$scratch" "$((dry_run || plan_only))" "$(printf 'home|%s\nconfig_home|%s\n' "${HOME:-}" "$config_home")")"
-if (( china_mirrors ));then
-  [[ "$config_home" == /* ]] || { printf 'error: config_home must be absolute\n' >&2;exit 1; }
-  config_home="$(apply_resolve_root "$config_home")"
-  plan="$(mirror_make_plan "$mirror_config" apply "$config_home" "$session" "$scratch" "$plan")"
-fi
-apply_validate_plan "$plan"
-if (( plan_only ));then contract_write apply-plan "$plan";exit 0;fi
-apply_execute_plan "$plan" "$session" "$dry_run" "$results_path" "$stage_result_path"
-printf 'Configuration applied successfully.\n'
+deployment_run "$((dry_run || plan_only))" dotfiles_request apply-entry-native \
+  style unix native_shell "$BASH" kind configuration repo "$repo_root" owner_pid "$$" \
+  dry "$dry_run" plan_only "$plan_only" restore "$restore_journal" selection "$selection" \
+  roots "$(printf 'home|%s\nconfig_home|%s\n' "${HOME:-}" "${XDG_CONFIG_HOME:-${HOME:+$HOME/.config}}")" config "${XDG_CONFIG_HOME:-${HOME:+$HOME/.config}}" backup "${DOTFILES_BACKUP_DIR:-$HOME/.dotfiles-backups}" \
+  results "$results_path" metadata "$stage_result_path" mirrors "$china_mirrors" mirror_config "$mirror_config" \
+  manager "$(china_mirror_detect_package_manager)" cargo_home "${CARGO_HOME:-$HOME/.cargo}" npm_config "${NPM_CONFIG_USERCONFIG:-$HOME/.npmrc}"

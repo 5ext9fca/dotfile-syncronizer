@@ -22,12 +22,10 @@ while (( $# ));do
   esac
   shift
 done
-config_home="$(apply_resolve_root "${XDG_CONFIG_HOME:-$HOME/.config}")"
-backup_root="$(apply_resolve_root "${DOTFILES_BACKUP_DIR:-$HOME/.dotfiles-backups}")"
-session="$(apply_session_path "$backup_root")"
-scratch="$(mktemp -d)"
-trap 'rm -rf "$scratch"' EXIT
-plan="$(mirror_make_plan "$mirror_config" "$mode" "$config_home" "$session" "$scratch" '')"
-apply_validate_plan "$plan"
-if (( plan_only ));then contract_write apply-plan "$plan";exit 0;fi
-apply_execute_plan "$plan" "$session" "$dry_run" "$results" "$stage_result_path"
+dotfiles_python_init
+deployment_run "$((dry_run || plan_only))" dotfiles_request apply-entry-native \
+  style unix native_shell "$BASH" kind mirrors repo "$repo_root" owner_pid "$$" \
+  dry "$dry_run" plan_only "$plan_only" mode "$mode" \
+  config "${XDG_CONFIG_HOME:-$HOME/.config}" backup "${DOTFILES_BACKUP_DIR:-$HOME/.dotfiles-backups}" \
+  results "$results" metadata "$stage_result_path" mirror_config "$mirror_config" \
+  manager "$(china_mirror_detect_package_manager)" cargo_home "${CARGO_HOME:-$HOME/.cargo}" npm_config "${NPM_CONFIG_USERCONFIG:-$HOME/.npmrc}"

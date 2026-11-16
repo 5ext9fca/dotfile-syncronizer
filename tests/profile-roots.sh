@@ -24,8 +24,7 @@ reject workflow_read_profile "$test_tmp/missing.conf"
 # Installation discovery must not be reached at all with install=none.
 context="$test_tmp/context";mkdir "$context"
 printf 'install=none\n' > "$context/profile"
-install_items_plan() { fail 'installation discovery called'; }
-[[ -z "$(workflow_refresh_install_plan "$context")" ]] || fail 'unexpected installation plan'
+# Default-profile observation isolation is also asserted in tests/core/test_profile_v2.py.
 workflow_stage_plan unix $'install=none\ncomponents=none\nshell=none\nmirrors=none\nwsl=none' '' '' 0 > "$context/stages.plan"
 if grep -q '|1|' "$context/stages.plan";then fail 'empty profile enabled a stage';fi
 # Shared root mapping resolves only selected roots; home permits single dotfiles.
@@ -36,7 +35,7 @@ printf '[unix]\nsource=git\ntarget_root=home\ntarget=.gitconfig\nmethod=copy\n' 
 roots="$(printf 'home|%s\nconfig_home|relative-invalid\n' "$HOME")"
 plan="$(apply_make_plan "$test_tmp/source" "$test_tmp/items" '' "$test_tmp/backup" '' '' 0 "$roots")"
 [[ "$plan" == *"$HOME/.zshrc"* && "$plan" == *"$HOME/.gitconfig"* ]] || fail 'wrong home targets'
-reject apply_validate_results "$HOME/.zshrc" "$plan"
+reject apply_execute_plan "$plan" "$test_tmp/rejected-backup" 1 "$HOME/.zshrc"
 printf 'old\n' > "$HOME/.gitconfig"
 plan="$(apply_make_plan "$test_tmp/source" "$test_tmp/items" '' "$test_tmp/backup" '' '' 0 "$roots")"
 apply_execute_plan "$plan" "$test_tmp/backup" 0 > "$test_tmp/deploy.log"
@@ -61,7 +60,7 @@ rmdir "$XDG_CONFIG_HOME"
 rm "$test_tmp/config-alias"
 # Actual CLI tests use a copied declaration tree, never the live configuration.
 mkdir "$test_tmp/repo"
-for path in lib install apply workflow contracts configs mirrors;do cp -R "$repo_root/$path" "$test_tmp/repo/";done
+for path in lib install apply workflow contracts configs mirrors dotfiles_core;do cp -R "$repo_root/$path" "$test_tmp/repo/";done
 cat > "$test_tmp/repo/workflow/profiles/custom.conf" <<'PROFILE'
 schema_version=2
 install=none

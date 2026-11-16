@@ -22,25 +22,25 @@ function Get-WindowsItemState {
     return ''
 }
 
-function Get-InstallObservedItem {
-    param([hashtable]$Item, [hashtable]$Context, [ValidateSet('normal', 'resume')][string]$Mode)
-    $Fresh = $Item.Clone()
-    if ($Item.reason -match '^(provided-by-host:|environment-not-selected:)') { return $Fresh }
-    $Fresh.detected_method = ''; $Fresh.detected_paths = ''
-    if ($Fresh.discovery) {
-        $Observation = Get-InstallDiscoveryObservation $Fresh $Context
-        $Fresh.state = $Observation.State; $Fresh.detected_method = $Observation.Method; $Fresh.detected_paths = $Observation.Paths
-    } else { $Fresh.state = Get-WindowsItemState $Fresh $Context }
-    if (-not $Fresh.discovery -and -not $Fresh.state -and $Fresh.method -eq 'winget' -and (Get-Command winget.exe -ErrorAction SilentlyContinue)) {
-        $Probe = Invoke-ManagedCommand probe winget.exe @('list', '--id', $Fresh.packages, '--exact', '--source', $Fresh.source_repo, '--accept-source-agreements', '--disable-interactivity') -TimeoutSeconds (Get-InstallExecutionPolicy winget probe).TimeoutSeconds
+function Get-NativeInstallState {
+    param([hashtable]$Item, [hashtable]$Context)
+    $State = Get-WindowsItemState $Item $Context
+    if (-not $State -and $Item.method -eq 'winget' -and (Get-Command winget.exe -ErrorAction SilentlyContinue)) {
+        $Probe = Invoke-ManagedCommand probe winget.exe @('list', '--id', $Item.packages, '--exact', '--source', $Item.source_repo, '--accept-source-agreements', '--disable-interactivity') -TimeoutSeconds (Get-InstallExecutionPolicy winget probe).TimeoutSeconds
         # APPINSTALLER_CLI_ERROR_NO_APPLICATIONS_FOUND (0x8A150014) is absence; other errors must propagate.
         if ($Probe.ExitCode -notin @(0, -1978335212)) { throw (New-ExecutionException 'Installation presence probe failed' $Probe.ExitCode) }
-        if ($Probe.ExitCode -eq 0 -and $Probe.Stdout -match [regex]::Escape($Fresh.packages)) { $Fresh.state = 'present' }
+        if ($Probe.ExitCode -eq 0 -and $Probe.Stdout -match [regex]::Escape($Item.packages)) { $State = 'present' }
     }
-    $Decision = Get-InstallDecision $Fresh.state $Mode ([bool]$Fresh.discovery)
-    $Fresh.decision_reason = $Decision.DecisionReason
-    $Fresh.state = $Decision.State; $Fresh.action = $Decision.Action; $Fresh.reason = $Decision.Reason
-    $Fresh
+    [string]$State
+}
+
+function Get-InstallObservedItem {
+    param([hashtable]$Item, [hashtable]$Context, [ValidateSet('normal', 'resume')][string]$Mode)
+    $Value = Invoke-DotfilesRequest install-observe-native @{
+        style='windows'; native_shell=(Get-Process -Id $PID).Path; item=$Item; native_context=$Context;
+        mode=$Mode; policy_path=[string]$script:DotfilesExecutionPolicyPath
+    }
+    ConvertTo-DotfilesRecord $Value
 }
 
 function Get-WindowsResumeItem {

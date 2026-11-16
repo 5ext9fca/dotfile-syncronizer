@@ -1,12 +1,7 @@
+. (Join-Path $PSScriptRoot 'python.ps1')
 function Get-ExecutionResult {
     param([int]$Code, [bool]$DryRun = $false)
-    if ($Code -eq 0 -and $DryRun) { return @{ Status = 'planned'; Reason = 'dry-run' } }
-    foreach ($Line in Get-Content -LiteralPath (Join-Path $PSScriptRoot '../workflow/schema/outcomes.tsv')) {
-        if ($Line.StartsWith('#')) { continue }
-        $Fields = $Line.Split("`t")
-        if ($Fields[0] -eq [string]$Code) { return @{ Status = $Fields[1]; Reason = $Fields[2] } }
-    }
-    return @{ Status = 'failed'; Reason = "exit-$Code" }
+    Invoke-DotfilesRule execution-result @{code=$Code;dry=[int]$DryRun} -AsHashtable
 }
 function New-ExecutionException {
     param([string]$Message, [int]$Code)

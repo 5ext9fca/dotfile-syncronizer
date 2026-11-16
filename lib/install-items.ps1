@@ -1,8 +1,6 @@
 . (Join-Path $PSScriptRoot 'data-contract.ps1')
 . (Join-Path $PSScriptRoot 'atomic-report.ps1')
 . (Join-Path $PSScriptRoot 'install-discovery.ps1')
-. (Join-Path $PSScriptRoot 'install-normalize.ps1')
-. (Join-Path $PSScriptRoot 'install-compat.ps1')
 # Shared-schema configuration, dependency planning and execution for PowerShell 5.1+.
 $InstallSchemaDirectory = Join-Path $PSScriptRoot '../install/schema'
 

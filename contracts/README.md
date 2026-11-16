@@ -1,6 +1,6 @@
 # 计划与报告契约
 
-[schema/types.tsv](schema/types.tsv) 定义类型和版本；同目录 `<kind>.fields` 定义列集合。Bash 与 PowerShell 通过 `lib/data-contract.sh` / `.ps1` 读写，不能自行维护另一份字段顺序。
+[schema/types.tsv](schema/types.tsv) 定义类型和版本；同目录 `<kind>.fields` 定义列集合。`dotfiles_core/contracts.py` 统一读写，Bash 与 PowerShell 通过 `lib/data-contract.sh` / `.ps1` 薄包装调用，不能自行维护另一份字段顺序。
 
 ## 文本封套
 
@@ -30,7 +30,7 @@ docker|skipped|0|discovered-installation|cask|manual|["/Applications/Docker.app"
 
 install-plan 当前版本为 7：包含归一化的环境、方式与 `probe_command`，包含字体文件列表 `font_files` 和下载校验 family `font_family`，以及安装专用依赖 `install_depends_on`、`detected_method`、`detected_paths`、`decision_reason`；不再包含旧声明字段 `scope`、`check`。install-result 和 workflow-request 当前版本为 2；其他契约版本仍为 1，以 schema 为准。内部 install 计划行带 `schema_version=7`，apply 计划行带 `schema_version=1`，执行器在 dispatch 前拒绝不支持的版本。不接受旧的无封套 plan/detail report，也没有持久计划重放接口。
 
-`lib/install-report.*` 为状态查询提供显式 install-result v1 只读兼容适配，按历史 schema 校验后补空的新字段。它不推测历史证据，不改写历史文件，不让通用契约读取器或执行器接受旧计划。未知版本和坏列仍拒绝。
+`dotfiles_core/contracts.py` 为状态查询提供显式 install-result v1 只读兼容适配，按历史 schema 校验后补空的新字段。它不推测历史证据，不改写历史文件，不让通用契约读取器或执行器接受旧计划。未知版本和坏列仍拒绝。
 
 `selected_method` 是计划中的首选安装方式，即使因其他方式的文件证据而跳过也保持原值，不表示实际执行过该方式。`detected_method` 是首个满足全部声明路径的方式；`detected_paths` 是本次检查命中的绝对路径组成的 JSON 字符串数组，顺序为该方式声明的文件路径、目录路径。空字段表示没有命中证据；PATH 根保存第一个命中的非空 PATH 目录中的路径。路径按检查入口记录，不解析成符号链接最终目标；不是包管理器所有权、版本或完整性证明。JSON 转义保护路径内的特殊字符和外层 `|` 分隔符，消费者应解析 JSON，不按逗号或分号拆路径。
 
@@ -63,3 +63,5 @@ Bash capture 目录包含 stdout、stderr 和 command.result；PowerShell 返回
 ## 维护
 
 新增字段或版本时同时检查两端 reader/writer、消费者和共享夹具；不要只改 Markdown 或单个输出点。配置生成任务通常不需要修改 contracts。原子发布只保证单文件快照，不保证多份报告同时更新或断电落盘。完整边界见 [架构文档](../docs/architecture.md)。
+
+核心/原生临时 JSON 协议版本独立于持久数据契约。其请求只在当前调用中有效；不是保存计划、重放或迁移会话格式。安装计划仍为 v7，人工续跑请求仍为 v2。

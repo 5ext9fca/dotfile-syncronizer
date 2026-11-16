@@ -18,6 +18,7 @@ while (( $# )); do
   esac
   shift
 done
+dotfiles_python_init
 [[ -n "$platform" ]] || { printf 'error: --platform is required\n' >&2; exit 2; }
 plan="$(install_items_plan "$items" "$platform" "$mirrors" "$wsl" 0)"
 if [[ "$explain" == 1 ]];then install_explain_plan "$plan" "$platform" all "$items"

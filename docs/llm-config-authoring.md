@@ -1,6 +1,6 @@
 # 面向 LLM 的配置生成指南
 
-本文件用于指导代码代理在本仓库新增或修改配置。目标是生成当前 parser/handler 真正支持、能预览和验证的声明，而不是设计一套新格式。先阅读 [AGENTS.md](../AGENTS.md)、[配置语义](configuration.md) 和相关 schema；代码与 schema 是字段、平台和行为的最终依据。
+本文件用于指导代码代理在本仓库新增或修改配置。目标是生成当前 parser/handler 真正支持、能预览和验证的声明，而不是设计一套新格式。先阅读 [AGENTS.md](../AGENTS.md)、[配置语义](configuration.md) 和相关 schema；代码与 schema 是字段、平台和行为的最终依据。共享解析与规则位于 `dotfiles_core/`；原生 handlers 负责命令与完整文件事务。验证前准备 [Python 运行时](../install/README.md#python-运行时)，不要修改持久契约来适配迁移。
 
 ## 任务输入与输出
 
@@ -178,6 +178,6 @@ bash tests/workflow-schema.sh
 
 修改字体下载先用 `fc-scan` 核对样本 family、字重和字符覆盖，不执行第三方脚本、不提交字体二进制。下载项必须声明 `font_family`，维护 `font_files` 与整组 `detect_files` 的一致性，目标目录按安装项 ID 固定；不要增加自定义路径字段、镜像、版本锁定或安装后验证。
 
-`desktop-fonts` 的 Fontconfig 源仍是应用原生 XML；`condition=linux-kde` 和 `renderer=desktop-fonts` 是新增的受限 apply 字段。修改前阅读 `lib/desktop-fonts.sh` 与 `apply/renderers/desktop-fonts.py`，使用临时 KDE/GTK 配置验证保留用户设置、重复 apply、备份与恢复。不要向 Fish/Helix/Zellij 添加终端字体字段，不修改 WezTerm 的既有回退链，也不要把中文通配替换规则用于所有字体请求。
+`desktop-fonts` 的 Fontconfig 源仍是应用原生 XML；`condition=linux-kde` 和 `renderer=desktop-fonts` 是新增的受限 apply 字段。修改前阅读 `dotfiles_core/apply_planning.py`、`native_apply.py` 与 `apply/renderers/desktop-fonts.py`，使用临时 KDE/GTK 配置验证保留用户设置、重复 apply、备份与恢复。不要向 Fish/Helix/Zellij 添加终端字体字段，不修改 WezTerm 的既有回退链，也不要把中文通配替换规则用于所有字体请求。
 
 桌面正文与等宽字体读取 Fontconfig XML 的 `system-ui`、`monospace` 首选 family，预检读取全部顶层 alias 的 prefer/accept family。默认正文为 Noto Sans CJK SC，不再提供苹方下载项。改 family 时同步核对安装项与 profile 关联；不要在处理器另写一份字体列表。下载夹具中的 example.org 仅用于测试，不是实际字体来源。

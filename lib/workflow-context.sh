@@ -32,8 +32,3 @@ workflow_context_set() {
   [[ "$2" =~ ^[a-z][a-z0-9_.-]*$ ]] || return 2
   printf '%s\n' "$3" > "$1/$2"
 }
-workflow_will_install() {
-  local context="$1" id="$2"
-  awk -F '|' '$2==1 && $5=="packages" {found=1} END {exit !found}' "$context/stages.plan" || return 1
-  awk -F '|' -v id="$id" '$1==id {found=1} END {exit !found}' "$context/install.plan"
-}

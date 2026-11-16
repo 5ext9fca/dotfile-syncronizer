@@ -5,8 +5,6 @@ set -euo pipefail
 repo_root="$(cd -- "$(dirname -- "$0")/.." && pwd -P)"
 # shellcheck source=../lib/apply-items.sh
 source "$repo_root/lib/apply-items.sh"
-# shellcheck source=../lib/mirrors.sh
-source "$repo_root/lib/mirrors.sh"
 work="$(mktemp -d)"
 work="$(cd -- "$work" && pwd -P)"
 trap 'rm -rf "$work"' EXIT
@@ -14,25 +12,26 @@ test_config="$work/home/.config"
 export CARGO_HOME="$work/home/.cargo" NPM_CONFIG_USERCONFIG="$work/home/.npmrc"
 mkdir -p "$CARGO_HOME" "$test_config" "$work/system/etc/apt/sources.list.d" "$work/bin"
 # Never query or write the host Go environment during these isolated tests.
-go() { [[ "$*" == 'env GOENV' ]] && printf '%s\n' "$test_config/go/env"; }
-# Called indirectly by the sourced mirror planner.
-# shellcheck disable=SC2329
-china_mirror_detect_package_manager() { printf 'apt\n'; }
+export DOTFILES_TEST_GO_ENV="$test_config/go/env"
+cat > "$work/bin/go" <<'GO'
+#!/usr/bin/env bash
+[[ "$*" == 'env GOENV' ]] || exit 91
+printf '%s\n' "$DOTFILES_TEST_GO_ENV"
+GO
+chmod +x "$work/bin/go"
+export PATH="$work/bin:$PATH"
 cp "$repo_root/mirrors/current.conf" "$work/current.conf"
 printf 'deb http://archive.ubuntu.com/ubuntu noble main\ndeb https://third-party.example/repo stable main\n' > "$work/system/etc/apt/sources.list"
 printf 'deb https://mirrors.ustc.edu.cn/ubuntu-ports noble main\n' > "$work/system/etc/apt/sources.list.d/ports.list"
 printf '[build]\njobs = 7\n' > "$CARGO_HOME/config.toml"
 printf 'save-exact=true\n' > "$NPM_CONFIG_USERCONFIG"
 cp "$CARGO_HOME/config.toml" "$work/unknown-cargo"
+manager=apt
 plan_for() {
   local mode="$1" label="$2"
   mkdir -p "$work/$label-scratch"
-  mirror_make_plan "$work/current.conf" "$mode" "$test_config" "$work/backups/$label" "$work/$label-scratch" '' "$work/system"
+  dotfiles_request mirror-plan-native native_shell "$BASH" file "$work/current.conf" mode "$mode" config "$test_config" session "$work/backups/$label" scratch "$work/$label-scratch" base_plan '' system_root "$work/system" manager "$manager" cargo_home "$CARGO_HOME" npm_config "$NPM_CONFIG_USERCONFIG"
 }
-# Installation preparation only exports process variables; no files are changed.
-mirror_prepare_install "$work/current.conf"
-[[ "$RUSTUP_DIST_SERVER" == https://mirrors.ustc.edu.cn/rust-static && ! -f "$test_config/fish/conf.d/15-mirrors.fish" ]]
-cmp "$CARGO_HOME/config.toml" "$work/unknown-cargo"
 plan="$(plan_for initialize initial)"
 apply_execute_plan "$plan" "$work/backups/initial" 0 > "$work/log"
 cmp "$CARGO_HOME/config.toml" "$work/unknown-cargo"
@@ -89,9 +88,7 @@ metalink=https://mirrors.fedoraproject.org/metalink?repo=fedora-$releasever&arch
 #baseurl=http://download.fedoraproject.org/pub/fedora/linux/releases/$releasever/Everything/$basearch/os/
 enabled=1
 DNF
-# Called indirectly by the sourced mirror planner.
-# shellcheck disable=SC2329
-china_mirror_detect_package_manager() { printf 'dnf\n'; }
+manager=dnf
 plan="$(plan_for initialize dnf-initial)";apply_execute_plan "$plan" "$work/backups/dnf-initial" 0 > "$work/log"
 grep -Fq 'baseurl=https://mirrors.ustc.edu.cn/fedora/releases/$releasever' "$work/system/etc/yum.repos.d/fedora.repo"
 grep -Fq '#metalink=' "$work/system/etc/yum.repos.d/fedora.repo"
@@ -99,9 +96,7 @@ awk '{sub(/^fedora=.*/,"fedora=https://fedora.example.test/linux");print}' "$wor
 plan="$(plan_for apply dnf-update)";apply_execute_plan "$plan" "$work/backups/dnf-update" 0 > "$work/log"
 grep -Fq 'baseurl=https://fedora.example.test/linux/releases/' "$work/system/etc/yum.repos.d/fedora.repo"
 printf 'Server = https://custom.example.test/arch/$repo/os/$arch\n' > "$work/system/etc/pacman.d/mirrorlist"
-# Called indirectly by the sourced mirror planner.
-# shellcheck disable=SC2329
-china_mirror_detect_package_manager() { printf 'pacman\n'; }
+manager=pacman
 plan="$(plan_for initialize pacman-initial)";apply_execute_plan "$plan" "$work/backups/pacman-initial" 0 > "$work/log"
 grep -Fqx 'Server = https://mirrors.ustc.edu.cn/archlinux/$repo/os/$arch' "$work/system/etc/pacman.d/mirrorlist"
 grep -Fqx 'Server = https://custom.example.test/arch/$repo/os/$arch' "$work/system/etc/pacman.d/mirrorlist"

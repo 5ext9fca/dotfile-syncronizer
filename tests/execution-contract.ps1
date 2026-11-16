@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $Repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 . (Join-Path $Repo 'lib/workflow.ps1')
+. (Join-Path $PSScriptRoot 'fixtures/install/commands/setup.ps1')
 function Assert($Condition, $Message) { if (-not $Condition) { throw $Message } }
 foreach ($Line in Get-Content (Join-Path $Repo 'tests/fixtures/execution/outcomes.tsv')) {
     if ($Line.StartsWith('#')) { continue }
@@ -19,6 +20,7 @@ foreach ($Line in Get-Content (Join-Path $Repo 'tests/fixtures/execution/probes.
 }
 $Temp = Join-Path ([IO.Path]::GetTempPath()) ('dotfiles-execution-' + [guid]::NewGuid().ToString('N'))
 $null = New-Item -ItemType Directory $Temp
+$PreviousPath = $env:PATH; $PreviousState = $env:DOTFILES_TEST_PACKAGE_STATE
 try {
     Invoke-InstallCommand @{ DryRun = $true } 'missing-contract-command' @()
     $Failed = $false
@@ -29,17 +31,20 @@ try {
         @{ Id = 'packages'; Enabled = $true; Action = 'packages' },
         @{ Id = 'configuration'; Enabled = $true; Action = 'configuration' }
     ) }
-    $Actions = @{
-        packages = {
-            param($Context, $Report)
-            $Running = @(Get-Content (Join-Path $Context.SessionPath 'workflow.json') -Raw | ConvertFrom-Json)
-            Assert ($Running[0].status -eq 'running') 'Missing durable stage start'
-            throw (New-ExecutionException 'Interrupted child' 130)
-        }
-        configuration = { throw 'Downstream stage must not execute' }
-    }
+    $Fixture = New-FakeWinGet $Temp
+    $Context.RepoRoot = Join-Path $Temp 'repo'
+    $Items = Join-Path $Context.RepoRoot 'install/items'
+    $null = New-Item -ItemType Directory $Items
+    Copy-Item (Join-Path $PSScriptRoot 'fixtures/install/windows/tool.conf') $Items
+    $Context.Profile = @{install='all'}
+    $Context.InstallContext = @{DryRun=$false;ProgramFiles=$Temp;VsInstallerRoot=$Temp}
+    '130' | Set-Content (Join-Path $Fixture.State 'install-exit')
+    'tool' | Set-Content (Join-Path $Fixture.State 'report-id')
+    (Join-Path $Context.SessionPath 'packages.tsv') | Set-Content (Join-Path $Fixture.State 'report-source')
+    (Join-Path $Temp 'running-install.tsv') | Set-Content (Join-Path $Fixture.State 'install-snapshot')
     $Failed = $false
-    try { Invoke-WorkflowStages $Context $Actions } catch { $Failed = $true }
+    try { Invoke-WorkflowStages $Context } catch { $Failed = $true; Write-Host $_.Exception.Message }
+    Assert ((Get-Content (Join-Path $Temp 'running-install.tsv') -Raw) -match 'tool\|running\|') 'Missing durable item start'
     $Rows = @(Get-Content $Context.ResultsPath -Raw | ConvertFrom-Json)
     $ExpectedFields = @(Get-Content (Join-Path $Repo 'workflow/schema/report-fields.tsv') | Where-Object { -not $_.StartsWith('#') } | ForEach-Object { $_.Split("`t")[0] } | Sort-Object)
     $ActualFields = @($Rows[0].PSObject.Properties.Name | Sort-Object)
@@ -51,5 +56,9 @@ try {
     $LegacyText = (& (Join-Path $Repo 'workflow/status.ps1') -Session $Context.SessionPath) -join "`n"
     Assert ($LegacyText -match '-FromStage packages') 'Missing legacy retry entry'
     Assert ($Rows[1].status -eq 'blocked' -and $Rows[1].retry_stage -eq 'packages' -and $Rows[1].schema_version -eq 1) 'Missing retry/version contract'
-} finally { Remove-Item $Temp -Recurse -Force }
+} finally {
+    $env:PATH = $PreviousPath; $env:DOTFILES_TEST_PACKAGE_STATE = $PreviousState
+    Remove-FakeWinGetLinks $Fixture
+    Remove-Item $Temp -Recurse -Force
+}
 Write-Host 'Execution outcomes, probes, command prerequisites and interrupted-session contracts passed.'

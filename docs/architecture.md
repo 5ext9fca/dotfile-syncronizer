@@ -9,9 +9,10 @@
 | `install/` | 平台 CLI、安装项声明、安装机制 | `items/*.conf`、`schema/*.tsv`、`handlers/` |
 | `apply/` | 配置文件部署与受保护恢复 | `items/*.conf`、`schema/fields.tsv`、`handlers/` |
 | `workflow/` | 安装与配置的阶段关联、状态查询 | `profiles/*.conf`、`schema/stages.tsv`、`status.*` |
-| `mirrors/` | 当前镜像端点、所有权识别、文本渲染 | `current.conf`、`handlers/`、`renderers/` |
-| `contracts/` | 两种实现共用的版本化数据格式 | `schema/types.tsv`、`schema/*.fields` |
-| `lib/` | 解析、计划、执行、会话、恢复和平台适配 | 对应的 `.sh` / `.ps1` 模块 |
+| `mirrors/` | 当前镜像端点与历史所有权数据 | `current.conf`、`legacy.conf` |
+| `contracts/` | 核心与原生适配器共用的版本化数据格式 | `schema/types.tsv`、`schema/*.fields` |
+| `dotfiles_core/` | 共享声明、规划、预检、调度、镜像与报告规则 | 标准库 Python 模块 |
+| `lib/` | 原生观察、命令、事务、恢复、租约和核心薄包装 | 对应的 `.sh` / `.ps1` 模块 |
 | `configs/fish/`、`configs/helix/`、`configs/wezterm/`、`configs/zellij/`、`configs/git/` | Unix 应用配置源文件 | 各应用原生格式 |
 | `configs/windows-terminal/` | Windows Terminal 配置源文件 | `settings.json`，允许 JSONC 注释 |
 | `tests/`、`.github/workflows/` | 共享夹具、隔离回归和已禁用的平台 CI 配置 | `checks/manifest.tsv` |
@@ -71,18 +72,23 @@ flowchart TD
 
 ### 安装状态与动作决策
 
-`lib/install-items.*` 是安装模块的公共入口。`install-config.*` 读取并验证声明，
-`install-plan.*` 处理来源与环境选择；PowerShell 的方式归一化位于
-`install-normalize.ps1` / `.awk`。旧声明仅在 `install-compat.ps1` / `.awk` 转换一次。
-`install-state.*` 负责只读机制探测与续跑清单检查，`install-discovery.*` 负责文件系统发现。
-`install-decision.*` 仅把观察结果和运行模式映射为动作，不执行命令或访问文件系统。
-`install-execute.*` 执行已经选定的动作并发布报告，handlers 仅负责实际安装操作。
+`lib/install-items.*` 保留原生调用接口；`dotfiles_core/install_config.py` 统一解析、兼容转换和依赖图，`install_planning.py` 与 `execution_rules.py` 统一选择和决策。`native_observation.py` 通过原生适配器获取文件系统与命令观察，`install_execution.py` 调度安装项和报告。handlers 仍负责实际平台命令。
 
 普通规划和人工续跑共用决策层。续跑仍重新探测当前状态，不依据历史成功报告跳过安装。
 普通运行与续跑均使用当前安装清单，已存在的 pipx 环境也跳过。安装命令按执行策略正常退出即成功，不进行安装后存在性复核；续跑仍保留阶段选择语义。
 
-安装计划保留观察到的匹配方式和路径，`install-report.*` 集中构造执行结果、读取旧 v1
+安装计划保留观察到的匹配方式和路径，`dotfiles_core/contracts.py` 集中构造执行结果、读取旧 v1
 结果和格式化状态说明。发现引擎一次检查同时返回状态与路径，报告发布不重新探测。
 执行阶段仍使用原有原子快照；这些证据描述检查时刻的文件系统，不扩展为安装后验证、事务或健康检查。
 
 当前运行先验证完整声明图，再从 profile 根项目开始观察并按需扩展依赖。公共依赖始终保留，安装专用边只在目标需要安装时扩展；离线计划不做发现，展示首选方式的完整依赖图。准备操作按当前待安装机制触发。普通重跑重新规划当前选择，手动续跑仍只处理原会话所选阶段中的未完成部分，不成为全量巡检。
+
+## Python 与原生边界
+
+启动器仅使用显式 `DOTFILES_PYTHON` 或当前 checkout 的平台 `.venv`，要求 Python ≥3.15；验证使用 3.15。帮助不要求运行时，plan、dry-run、resume、restore 都要求。初始化固定解释器，保留虚拟环境路径；Windows 解释器不传给 WSL，guest 独立准备运行时。
+
+`workflow_preflight.py` 协调完整只读预检，`workflow_session.py` 管理会话与阶段循环，`workflow_review.py` 解释历史结果及人工续跑。profile v2、install-plan v7、workflow-request v2 保持不变；空集合不部署，续跑读取当前声明并重新观察。配置规划接收显式根映射，仅解析所选组件的根；home 不作为整个会话禁区，具体托管目标仍受保护。
+
+核心与 `lib/core-adapter.*` 使用当前调用私有目录中的 UTF-8 JSON 请求/结果，校验版本、字段、允许操作、操作匹配和退出码。大结构不放入外部命令 argv，不从日志推断结构化结果。文件不会成为持久计划或重放接口。
+
+原生侧保留主机、文件系统、账户、WSL 查询及终端输入、日志、超时、取消；文件事务、journal 和受保护恢复保持完整原生操作，部署租约覆盖完整变更区间，报告由原生原子发布。没有旧业务实现回退开关。

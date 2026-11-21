@@ -2,6 +2,15 @@
 
 本文件记录各次变更的实际验证结果；历史记录不代表当前版本或未执行平台已通过验证。测试运行方法及 CI 状态见 [测试与验证](README.md)。
 
+## 2026-11-22 · Windows 重启后复核桌面字体和应用内回退
+
+Windows 11 Pro x64（26300），开机约 6 分钟。只读检查，沿用上次的桌面设置。
+
+- 通过 Win32 回读六项桌面字体，均为 SF Pro Text。八份 SF Pro Text 和六份 PingFang SC 的用户注册路径均存在，系统级 GDI 字体链接仍指向系统目录中的苹方常规体。
+- 重复上次的 WinForms `TextRenderer.DrawText` 对照。数字 0 和“夜、曲”的字形摘要与重启前一致；指定 SF Pro Text 绘制的两个汉字与直接指定苹方的样本仍不同。此比较无法识别实际回退家族。
+- 在 WPF 以 `zh-CN` 对 `Nocturne 03:42 夜曲` 排版并读取 `GlyphRun.GlyphTypeface.FontUri`。单独指定 SF Pro Text 时，西文及数字使用 SF Pro Text，中文在 400、500 使用 `msyh.ttc`，在 600 使用 `msyhbd.ttc`。显式指定 `SF Pro Text, PingFang SC` 时，两段分别使用对应家族的 Regular、Medium、Semibold 文件。
+- 自动审批拦截了独立 Chrome 进程的无头字体检查，未取得浏览器实测数据。本次只复核字体；未重跑安装器全套测试。
+
 ## 2026-11-22 · 原生 Windows 桌面字体
 
 Windows 11 Pro x64（26300），checkout 的 Python 3.14.0 虚拟环境，editable Viewer 0.2.0。实机应用使用字体专用 profile；测试未采集本机配置。

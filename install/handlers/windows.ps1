@@ -1,3 +1,18 @@
+function Get-WindowsFontRegistryName {
+    param([string]$File)
+    $Format = if ([IO.Path]::GetExtension($File) -eq '.ttf') { 'TrueType' } else { 'OpenType' }
+    return ([IO.Path]::GetFileNameWithoutExtension($File) + " ($Format)")
+}
+
+function Install-WindowsFontItem {
+    param([hashtable]$Item, [hashtable]$Context)
+    Invoke-InstallCommand -Context $Context -Method 'font-download' -Command 'powershell.exe' -Arguments @(
+        '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File',
+        (Join-Path $PSScriptRoot 'windows-fonts.ps1'), '-Id', $Item.id,
+        '-SourceUrl', $Item.source_url, '-FontFiles', $Item.font_files, '-FontFamily', $Item.font_family
+    )
+}
+
 function Install-WinGetItem {
     param([hashtable]$Item, [hashtable]$Context)
     Invoke-InstallCommand -Context $Context -Command 'winget.exe' -Arguments @(

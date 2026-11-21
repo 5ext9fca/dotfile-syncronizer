@@ -105,6 +105,7 @@ try {
         } elseif ($Request.operation -ceq 'install-command') {
             $Context.Method = $Item.method
             switch -CaseSensitive ($Item.method) {
+                'font-download' { Install-WindowsFontItem -Item $Item -Context $Context }
                 winget { Install-WinGetItem -Item $Item -Context $Context }
                 msvc { Install-MsvcItem -Item $Item -Context $Context }
                 default { throw "Unsupported Windows handler: $($Item.method)" }

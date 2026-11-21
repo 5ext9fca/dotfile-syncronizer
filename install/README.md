@@ -63,12 +63,21 @@ macOS Docker 声明 cask/manual 两种发现方式，优先使用 cask 安装。
 
 ## 字体
 
-原生 Linux 的默认和完整 profile 都安装 SF Pro Text（西文及数字）和静态 PingFang SC（简体中文）。已有文件齐全的字体家族会跳过。只安装这组字体及其依赖：
+原生 Linux 和 Windows 的默认及完整 profile 都包含 SF Pro Text（西文及数字）和静态 PingFang SC（简体中文）。也可以单独安装这组字体。
 
 ```bash
 ./install/linux.sh --profile linux-fonts --dry-run --yes
 ./install/linux.sh --profile linux-fonts --yes
 ```
+
+```powershell
+.\install\windows.ps1 -Profile windows-fonts -DryRun
+.\install\windows.ps1 -Profile windows-fonts
+```
+
+Windows 安装器将字体注册到当前用户。对应文件和注册项齐全时跳过。要让经典桌面使用这组字体，单独将标题、小标题、菜单、状态、消息和图标标签的字体设为 `SF Pro Text`，保留原字号和字重。支持字体列表的应用可直接设置 `SF Pro Text, PingFang SC`。
+
+经典 GDI 的简中回退需要管理员配置。先为所有用户安装苹方常规体，在 `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink` 的多字符串值 `SF Pro Text` 首行填入系统字体目录中的实际文件名和字体家族，例如 `PingFangSC-Regular.otf,PingFang SC`，保留已有回退项。保存工作后重启 Windows，再到目标应用查看。使用自有字体或渲染器的应用可能有独立设置。[微软字体链接说明](https://learn.microsoft.com/en-us/globalization/fonts-layout/fonts)
 
 字体来自 [SF Pro Text](https://github.com/Xramas/apple-fonts/tree/f85da081d5083b9b1361eb5e25a37167b4d6bc1a/sf-pro-text) 和 [PingFang SC](https://github.com/Kukuair/PingFang/tree/0b6f60fd41089a4f7992ffadb6f17c54f8f5c349)，下载到当前用户的字体目录。WSL 使用独立 profile。
 

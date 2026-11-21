@@ -2,6 +2,18 @@
 
 本文件记录各次变更的实际验证结果；历史记录不代表当前版本或未执行平台已通过验证。测试运行方法及 CI 状态见 [测试与验证](README.md)。
 
+## 2026-11-22 · 原生 Windows 桌面字体
+
+Windows 11 Pro x64（26300），checkout 的 Python 3.14.0 虚拟环境，editable Viewer 0.2.0。实机应用使用字体专用 profile；测试未采集本机配置。
+
+- `install/windows.ps1 -Profile windows-fonts -DryRun` 显示保留已注册的六份苹方，计划安装 SF Pro Text。实际运行安装八份 SF Pro Text，再次运行两项都报告 `already-installed`。
+- Windows PowerShell 5.1 的默认及完整 profile 预览起初因传给 Python 的引号被移除而找不到部署锁脚本。修复取路径的参数后，`-Profile windows -DryRun` 和 `-Profile windows-full -DryRun` 均通过。单独运行 `tests/install-items.ps1` 通过 76 个共享用例及处理器检查。
+- 本机备份六项桌面字体及有关注册表原值，通过 Win32 更改字体后回读，六项均为 SF Pro Text；逐字节比较六份 LOGFONT 中字体名之前的字段，字号、字重等均保留。机器级 GDI 回退首项指向系统目录中的苹方常规体，其 SHA-256 与原用户字体一致。
+- 八份 SF Pro Text 的字符映射都包含数字 0，苹方包含“夜”。当前会话的 WinForms 字形比较中，“夜、曲”与直接指定苹方的结果不同。本次未重启，重启后各应用的实际回退尚未验证。
+- 在临时目录以本机 Arial 字体模拟下载，声明不同家族，处理器在创建安装目标之前报错。Git Bash 和 Windows Python 的路径格式及空行导致原始 `tests/install-parity.ps1` 失败；分别转换路径并忽略输出空行后，20 种平台、镜像和环境组合的全部非空计划行一致。
+- 首轮严格检查受到会话中断。修复 PowerShell 5.1 入口后，以独立测试锁重新运行 `tests/check.ps1 -Strict`，21 项通过、4 项失败、29 项平台跳过。两个报告契约用例断言失败；另两个套件都在快照读失败用例中将临时文件的创建也模拟成权限错误，Windows 不断重试并耗用内存，确认调用栈后终止了对应的测试子进程。单独限制测试进程的 `tempfile.TMP_MAX=64` 重跑 Python 套件，163 项中报告 8 个断言失败、12 个错误及 11 项跳过。
+- 已复核两仓库的 README、AGENTS、配置及安装文档。原生 Linux、WSL、macOS 和 CI 未运行。
+
 ## 2026-11-22 · 对接 dotfile-viewer 和 Linux 桌面字体
 
 Fedora 45 KDE（原生 x86_64、DNF）、Python 3.14.10，checkout 的 `.venv` 安装新版 Viewer 0.2.0。本轮按操作请求配置了桌面；快照回归另用临时 HOME 和合成内容。

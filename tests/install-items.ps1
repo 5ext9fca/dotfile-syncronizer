@@ -87,6 +87,13 @@ try {
     Assert-True ($script:Calls[1].Arguments[2] -eq 'C:/Build Tools') 'MSVC path argument split incorrectly'
     Assert-True ($script:Calls[1].Method -eq 'msvc' -and $script:Calls[1].Operation -eq 'modify' -and 3010 -in (Get-InstallExecutionPolicy msvc modify).SuccessCodes) 'MSVC policy not selected'
 
+    $Font = @{ id = 'sample'; source_url = 'https://example.invalid/fonts'; font_files = 'Regular.otf Bold.ttf'; font_family = 'Sample Sans' }
+    Install-WindowsFontItem -Item $Font -Context @{ DryRun = $true }
+    $Call = $script:Calls[2]
+    Assert-True ($Call.Method -eq 'font-download' -and $Call.Command -eq 'powershell.exe') 'Wrong font command policy'
+    Assert-True ($Call.Arguments -ccontains 'Sample Sans' -and $Call.Arguments -ccontains 'Regular.otf Bold.ttf') 'Font declaration arguments were split'
+    Assert-True ((Get-WindowsFontRegistryName 'Sample.otf') -cne (Get-WindowsFontRegistryName 'Sample.ttf')) 'Font registrations collide'
+
     # Fail-fast results cover all items, including those blocked after the failure.
     . (Join-Path $RepoRoot 'lib/install-command.ps1')
     Remove-Item (Join-Path $Fixture.State 'report-id')

@@ -75,4 +75,4 @@ macOS Docker 声明 cask/manual 两种发现方式，优先使用 cask 安装。
 
 ## Viewer 依赖
 
-运行前安装 dotfile-viewer>=0.2,<0.3。默认声明与 schema 来自该包；--catalog DIR / -Catalog DIR 或 DOTFILES_CATALOG 选择外部完整目录。声明唯一来源不在本 checkout。
+运行前按[根 README 的准备步骤](../README.md#准备)从 GitHub 安装 Viewer 0.2.x。默认声明与 schema 来自该包。使用 `--catalog DIR`、`-Catalog DIR` 或 `DOTFILES_CATALOG` 可选择外部完整目录。

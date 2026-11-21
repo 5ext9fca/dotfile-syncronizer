@@ -2,6 +2,16 @@
 
 本文件记录各次变更的实际验证结果；历史记录不代表当前版本或未执行平台已通过验证。测试运行方法及 CI 状态见 [测试与验证](README.md)。
 
+## Viewer 依赖切换至 GitHub（2026-11-21 至 22 日）
+
+环境为 macOS ARM64，使用本仓库 `.venv` 中的 Python 3.14.10 和 pip 26.2.2。
+
+- `git ls-remote` 首次受沙箱 DNS 限制，获准联网后确认上游默认分支为 `main`，当时没有标签。
+- 用 pip 的 `--force-reinstall` 选项和项目声明的两条依赖要求重新安装 Viewer。安装记录 `direct_url.json` 显示来源为 `https://github.com/5ext9fca/dotfile-viewer.git`，分支为 `main`，提交为 `18d2e5a0941bda75624fc2782281ebf07e04ef0a`，发行版本为 0.2.0。`pip check` 和 Viewer 公共 API 的默认 catalog 定位均通过。
+- 使用 Python 解析 `pyproject.toml` 与 README 的 pip 命令，确认依赖参数一致，版本范围接受 0.2.0 并排除 0.3.0。已复核根 README、安装与测试说明、AGENTS、架构文档和禁用的 CI 工作流。
+- `./tests/check.sh --suite dry-run --strict` 使用临时 `DOTFILES_BACKUP_DIR`。4 项 macOS 预演通过，4 项 Linux 检查按平台跳过。
+- `./tests/check.sh --strict` 初次运行有 28 项通过、2 项失败、24 项按平台跳过。两项失败均因沙箱限制访问 `/dev/tty`。获准后在沙箱外分别重跑 `tests/command-terminal.py` 和完整 Python 核心套件，终端交互通过，Python 163 项中 162 项通过、1 项跳过。未运行原生 Linux、Windows 或 WSL 验证。
+
 ## Viewer 更名为 dotfile-viewer（2026-11-16）
 
 环境：macOS ARM64，Python 3.14.10。依赖改为 `dotfile-viewer>=0.2,<0.3`；Python 导入、Bash/PowerShell 入口、资源定位、测试及文档均改用 `dotfile_viewer`。不添加 Viewer 旧名称兼容层；既有备份、journal、环境变量和共享部署锁协议不变。

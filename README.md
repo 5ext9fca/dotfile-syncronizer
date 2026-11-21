@@ -4,16 +4,16 @@
 
 ## 准备
 
-需要 Python >=3.14，验证使用 Python 3.14。运行前安装兼容的 Viewer 0.2.x；不会在安装流程中自举运行依赖。
+准备 Git 和 Python >=3.14（验证使用 Python 3.14）。在本仓库根目录执行以下命令，从 [dotfile-viewer 的 GitHub 仓库](https://github.com/5ext9fca/dotfile-viewer) 的 `main` 分支安装兼容的 Viewer 0.2.x。
 
 ```bash
 python3.14 -m venv .venv
-.venv/bin/python -m pip install -e /path/to/dotfile-viewer
+.venv/bin/python -m pip install "dotfile-viewer @ git+https://github.com/5ext9fca/dotfile-viewer.git@main" "dotfile-viewer>=0.2,<0.3"
 ```
 
-从旧名称升级时，先在该环境执行 `python -m pip uninstall dotfiles-viewer`，再安装 `dotfile-viewer`。本项目已同步使用 `dotfile_viewer` 导入和模块入口，不保留 Viewer 旧名称兼容层；既有备份目录、`DOTFILES_*` 环境变量和共享锁路径保持不变。
+如果环境中已安装同版本的本地 `dotfile-viewer`，在上述安装命令中加上 `--force-reinstall` 即可切换来源。从旧名称升级时，先在该环境执行 `python -m pip uninstall dotfiles-viewer`，再安装 `dotfile-viewer`。本项目已同步使用 `dotfile_viewer` 导入和模块入口，不保留 Viewer 旧名称兼容层；既有备份目录、`DOTFILES_*` 环境变量和共享锁路径保持不变。
 
-Windows 使用 `.venv\Scripts\python.exe`，或显式设置 `DOTFILES_PYTHON`。不要在运行过程中替换解释器。
+Windows 可用 `py -3.14 -m venv .venv` 创建环境，执行上述 pip 命令时将解释器路径换为 `.\.venv\Scripts\python.exe`。也可用 `DOTFILES_PYTHON` 指定已装好依赖的解释器。不要在运行过程中替换解释器。
 
 ## 安装软件
 

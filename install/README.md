@@ -75,9 +75,11 @@ macOS Docker 声明 cask/manual 两种发现方式，优先使用 cask 安装。
 .\install\windows.ps1 -Profile windows-fonts
 ```
 
-Windows 安装器将字体注册到当前用户。对应文件和注册项齐全时跳过。要让经典桌面使用这组字体，单独将标题、小标题、菜单、状态、消息和图标标签的字体设为 `SF Pro Text`，保留原字号和字重。支持字体列表的应用可直接设置 `SF Pro Text, PingFang SC`。
+Windows 安装器将字体注册到当前用户。对应文件和注册项齐全时跳过。要让经典桌面使用这组字体，单独将标题、小标题、菜单、状态、消息和图标标签的字体设为 `SF Pro Text`，保留原字号和字重。
 
-经典 GDI 的简中回退需要管理员配置。先为所有用户安装苹方常规体，在 `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink` 的多字符串值 `SF Pro Text` 首行填入系统字体目录中的实际文件名和字体家族，例如 `PingFangSC-Regular.otf,PingFang SC`，保留已有回退项。保存工作后重启 Windows，再到目标应用查看。使用自有字体或渲染器的应用可能有独立设置。[微软字体链接说明](https://learn.microsoft.com/en-us/globalization/fonts-layout/fonts)
+支持字体列表的应用应按顺序指定 `SF Pro Text, PingFang SC`。以 WPF 为例，可设置 `FontFamily="SF Pro Text, PingFang SC"`。在 Windows 11 上用 `Nocturne 03:42 夜曲` 实测，西文和数字使用 SF Pro Text，中文在 400、500、600 三档分别使用苹方的常规、中等和半粗字重。仅指定 SF Pro Text 时，同一段中文回退到微软雅黑。[重启后的字体实测](../tests/acceptance.md#2026-11-22--windows-重启后复核桌面字体和应用内回退)
+
+经典 GDI 的简中回退需要管理员配置。先为所有用户安装苹方常规体，在 `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink` 的多字符串值 `SF Pro Text` 首行填入系统字体目录中的实际文件名和字体家族，例如 `PingFangSC-Regular.otf,PingFang SC`，保留已有回退项。保存工作后重启 Windows，再到目标应用查看。本机重启后链接仍在，但 WinForms 中“夜曲”的字形与直接指定苹方时仍有差异，实际回退家族尚未确认。若考虑用 MacType 调整笔画边缘或浓淡，先在目标应用核对实际字体，再用同一字号比较渲染效果。[微软字体链接说明](https://learn.microsoft.com/en-us/globalization/fonts-layout/fonts)
 
 字体来自 [SF Pro Text](https://github.com/Xramas/apple-fonts/tree/f85da081d5083b9b1361eb5e25a37167b4d6bc1a/sf-pro-text) 和 [PingFang SC](https://github.com/Kukuair/PingFang/tree/0b6f60fd41089a4f7992ffadb6f17c54f8f5c349)，下载到当前用户的字体目录。WSL 使用独立 profile。
 

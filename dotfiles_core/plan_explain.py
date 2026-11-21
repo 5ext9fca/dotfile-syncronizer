@@ -1,8 +1,6 @@
 """Human explanations of current plans, separate from persisted wire formats."""
-from pathlib import Path
-
 from dotfiles_core.contracts import Contract
-from dotfiles_core.install_config import read_items
+from dotfiles_core.install_config import item_directory, read_items
 
 OPERATIONS = frozenset(('install-explain', 'apply-explain'))
 
@@ -36,7 +34,7 @@ def request(operation: str, context: dict) -> tuple[object, list[str]]:
             if item.get('state'):
                 lines.append('     Detected state: ' + item['state'])
         if context.get('directory'):
-            directory = Path(context['directory'])
+            directory = item_directory(context['directory'])
             available = {item['id'] for item in read_items(directory, platform)}
             selected = {item['id'] for item in items}
             for path in sorted(directory.glob('*.toml')):

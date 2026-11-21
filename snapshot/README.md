@@ -1,6 +1,6 @@
 # 快照兼容入口与组合迁移
 
-快照实现与格式归 dotfiles-viewer。create/inspect 调用 Viewer 的 v2 导出与验证 API，不维护归档副本实现。安装前准备 Python 3.14 和 Viewer 0.2.x。
+快照实现与格式归 dotfile-viewer。create/inspect 调用 Viewer 的 v2 导出与验证 API，不维护归档副本实现。安装前准备 Python 3.14 和 Viewer 0.2.x。
 
 ```bash
 ./snapshot/snapshot.sh create --profile macos --output /existing/path/settings.zip --dry-run

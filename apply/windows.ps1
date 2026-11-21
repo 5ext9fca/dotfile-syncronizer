@@ -3,7 +3,7 @@ param([Parameter(Mandatory=$true)][string]$Snapshot, [switch]$DryRun, [switch]$P
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '../lib/python.ps1')
 Initialize-DotfilesPython
-$Arguments = @('-m', 'dotfiles_viewer', 'snapshot', 'apply', '--snapshot', $Snapshot)
+$Arguments = @('-m', 'dotfile_viewer', 'snapshot', 'apply', '--snapshot', $Snapshot)
 if ($DryRun -or $PlanOnly) { $Arguments += '--dry-run' }
 if ($DetachHardlink) { $Arguments += '--detach-hardlink' }
 & $env:DOTFILES_PYTHON @Arguments

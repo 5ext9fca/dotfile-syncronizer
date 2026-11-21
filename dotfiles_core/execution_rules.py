@@ -5,7 +5,7 @@ import re
 
 from dotfiles_core.errors import CoreError
 from dotfiles_core.install_config import ROOT, rows
-from dotfiles_viewer.install_config import ROOT as VIEWER_RESOURCES
+from dotfile_viewer.install_config import ROOT as VIEWER_RESOURCES
 
 
 class PolicyError(CoreError):

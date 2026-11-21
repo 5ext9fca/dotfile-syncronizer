@@ -12,7 +12,7 @@ setup_fake_package_commands() {
     cp "$repo/tests/fixtures/install/commands/fake-package-command.sh" "$destination/bin/$tool"
     chmod +x "$destination/bin/$tool"
   done
-  cp "$("${DOTFILES_PYTHON:-$repo/.venv/bin/python}" -c 'from dotfiles_viewer.install_config import ROOT; print(ROOT / "install/schema/methods.tsv")')" "$destination/install/schema/methods.tsv"
+  cp "$("${DOTFILES_PYTHON:-$repo/.venv/bin/python}" -c 'from dotfile_viewer.install_config import ROOT; print(ROOT / "install/schema/methods.tsv")')" "$destination/install/schema/methods.tsv"
   awk -F '\t' -v OFS='\t' '$1=="*" && $2=="probe" {$3=1} {print}' "$repo/install/schema/execution.tsv" > "$destination/install/schema/execution.tsv"
   export DOTFILES_TEST_PACKAGE_STATE="$destination/state"
   export PATH="$destination/bin"

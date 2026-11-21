@@ -3,6 +3,15 @@ install_probe() {
   local method="$1" record="$2" context="$3" package output code
   if [[ -n "$(install_field "$record" discovery)" ]];then install_discover "$record" "$context";return;fi
   case "$method" in
+    font-download)
+      local target file files=()
+      target="$HOME/.local/share/fonts/$(install_field "$record" id)"
+      read -r -a files <<< "$(install_field "$record" font_files)"
+      [[ -d "$target" && ! -L "$target" ]] || return 0
+      for file in "${files[@]}"; do
+        [[ -f "$target/$file" && ! -L "$target/$file" ]] || return 0
+      done
+      printf 'present\n' ;;
     pipx)
       package="$(install_field "$record" packages)"
       if command -v pipx >/dev/null 2>&1; then

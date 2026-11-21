@@ -25,7 +25,7 @@ def profile_fields() -> list[tuple[str, str, str]]:
 
 
 def read_profile(path: Path) -> dict[str, str]:
-    from dotfiles_viewer.api import catalog_root
+    from dotfile_viewer.api import catalog_root
     if path.parent.resolve() == (ROOT / 'workflow/profiles').resolve():
         path = catalog_root() / 'workflow/profiles' / path.name
     if 'schema_version=3' in path.read_text(encoding='utf-8-sig').splitlines():

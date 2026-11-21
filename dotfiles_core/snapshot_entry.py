@@ -10,8 +10,8 @@ import uuid
 from dotfiles_core.errors import CoreError, AdapterError
 from dotfiles_core.install_config import ROOT
 from dotfiles_core.snapshot import Platform, SnapshotError, capture, verify_archive, targets
-from dotfiles_viewer.api import SnapshotSession as ViewerSession, catalog_root, deployment_lease
-from dotfiles_viewer.host import host, host_roots
+from dotfile_viewer.api import SnapshotSession as ViewerSession, catalog_root, deployment_lease
+from dotfile_viewer.host import host, host_roots
 from dotfiles_core.software import read_catalog, profile_selection, write_catalog
 from dotfiles_core.apply_planning import Paths
 from dotfiles_core.apply_execution import NativeExecution

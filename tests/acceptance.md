@@ -2,6 +2,17 @@
 
 本文件记录各次变更的实际验证结果；历史记录不代表当前版本或未执行平台已通过验证。测试运行方法及 CI 状态见 [测试与验证](README.md)。
 
+## 2026-11-22 · 对接 dotfile-viewer 和 Linux 桌面字体
+
+Fedora 45 KDE（原生 x86_64、DNF）、Python 3.14.10，checkout 的 `.venv` 安装新版 Viewer 0.2.0。本轮按操作请求配置了桌面；快照回归另用临时 HOME 和合成内容。
+
+- `./install/linux.sh --dry-run --yes` 的默认选择（显式 `--profile linux`）、`linux-full` 和 `linux-fonts` 均通过。执行两次 `./install/linux.sh --profile linux-fonts --yes`，首次保留已有的六个 PingFang SC 文件、安装八个 SF Pro Text 文件，第二次两项均跳过。
+- 通过 Viewer 的版本检查、备份和显式硬链接拆分保存四个桌面配置，再通知 KDE 更新当前会话。KDE、GTK portal 均返回 SF Pro Text。用 `pango-view --serialize-to` 检查 Regular、Medium、Semibold，“夜曲”均使用 PingFang SC，“Nocturne 03:42”均使用 SF Pro Text；`fc-match monospace` 仍为 JetBrainsMono Nerd Font。
+- 在四份合成配置上通过 Viewer 导出、检查、应用预览、应用及重复应用。归档含字体声明，恢复的配置内容一致，重复应用四项均跳过。安装器的 `snapshot/snapshot.sh restore --dry-run` 同样通过。
+- 首轮 `./tests/check.sh --strict` 为 26 通过、5 失败、23 项平台跳过。Linux 入口测试的夹具缺安装目录并沿用旧 catalog 定位；计划解释读取 Viewer 声明后仍从旧目录枚举排除项。两处修正后用例通过。镜像、apply 契约、执行契约在与本机操作并行时失败，分别用独立部署锁重跑通过。
+- 最终设置独立测试锁再跑完整 `./tests/check.sh --strict`，31 项通过、0 失败、23 项平台跳过。构建 Viewer wheel 并逐字节核对其中的两份字体声明、桌面依赖及两个 Linux profile，结果一致。
+- Viewer 严格检查 24 项通过。安装器 Python 回归 163 项，其中 PowerShell 包装器和 macOS 专用用例各跳过一项。变更的 shell 脚本通过 `bash -n`；本机无 ShellCheck 和 PowerShell。已复核两项目 README、AGENTS、配置说明、安装与快照文档。原生 APT、Pacman、WSL、macOS、Windows 未执行。
+
 ## Agent 软件声明维护 skill（2026-11-16）
 
 本次只新增 `skills/maintain-software/SKILL.md` 并更新文档入口，没有修改软件声明、profile 或执行代码。验证环境为 macOS，checkout `.venv/bin/python` 为 Python 3.15.0a8。

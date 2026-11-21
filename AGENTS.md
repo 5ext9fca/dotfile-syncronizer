@@ -6,7 +6,7 @@ Conduct all conversational interaction with the user in Chinese. Write explanati
 
 ## Project Scope and Boundaries
 
-This project is a manually launched software installer and same-platform migration orchestrator depending on dotfiles-viewer. Each invocation is one run. Installation checks current presence before deciding whether to skip; otherwise success means the installation command exits with a code accepted by the execution policy. Do not add post-install existence verification. A run may fail; the operator may resolve the cause and restart it manually. The current reliability boundaries are sufficient. Evaluate future changes against this operating model rather than expanding it into a continuously running orchestration or supervision system.
+This project is a manually launched software installer and same-platform migration orchestrator depending on dotfile-viewer. Each invocation is one run. Installation checks current presence before deciding whether to skip; otherwise success means the installation command exits with a code accepted by the execution policy. Do not add post-install existence verification. A run may fail; the operator may resolve the cause and restart it manually. The current reliability boundaries are sufficient. Evaluate future changes against this operating model rather than expanding it into a continuously running orchestration or supervision system.
 
 - Keep explicit configuration capture into independent ZIP snapshots, same-platform installation/restoration, non-mutating preflight, clear failure reporting, and manual reruns within scope. Snapshots preserve selected declarations and file content, not installed software versions. Require identical installation branch, CPU architecture and native/WSL environment; operate Windows and WSL separately.
 - Checkpoint/resume support may be extended to help a manually restarted run continue from recorded progress. Revalidate current state before continuing; do not imply exactly-once execution, immutable plan replay, or automatic crash recovery.
@@ -20,7 +20,7 @@ Software/configuration declarations and profiles are user-maintained; the reposi
 
 ## Project Structure & Module Organization
 
-Depend on dotfiles-viewer>=0.2,<0.3 through its Python API. Viewer owns software declarations, profiles, declaration schemas, snapshot v2 export/verification/application and the cooperative deployment lease. Do not maintain duplicate software/items or workflow/profiles here. Current local files are configuration truth; no payloads in either repository.
+Depend on dotfile-viewer>=0.2,<0.3 through its Python API. Viewer owns software declarations, profiles, declaration schemas, snapshot v2 export/verification/application and the cooperative deployment lease. Do not maintain duplicate software/items or workflow/profiles here. Current local files are configuration truth; no payloads in either repository.
 
 This project owns installation observation/execution, native command adapters, installation policies, mirrors and session orchestration. Snapshot restore holds a Viewer SnapshotSession through configuration preflight, installation from archived declarations and configuration application. Do not add a reverse dependency. Historical journal restore commands and v1 snapshots are intentionally unsupported; existing backups remain untouched.
 

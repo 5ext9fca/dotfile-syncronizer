@@ -4,7 +4,8 @@ set -euo pipefail
 repo_root="$(cd -- "$(dirname -- "$0")/.." && pwd -P)"
 test_tmp="$(mktemp -d)"
 trap 'rm -rf "$test_tmp"' EXIT
-mkdir -p "$test_tmp/repo/software/items" "$test_tmp/repo/lib" "$test_tmp/repo/apply" "$test_tmp/bin" "$test_tmp/home"
+mkdir -p "$test_tmp/repo/software/items" "$test_tmp/repo/install" "$test_tmp/repo/lib" "$test_tmp/repo/apply" "$test_tmp/bin" "$test_tmp/home"
+export DOTFILES_CATALOG="$test_tmp/repo" DOTFILES_DEPLOYMENT_LOCK="$test_tmp/lease"
 cp "$repo_root/install/linux.sh" "$test_tmp/repo/install/"
 cp -R "$repo_root/install/schema" "$repo_root/install/handlers" "$test_tmp/repo/install/"
 cp "$repo_root"/lib/* "$test_tmp/repo/lib/"

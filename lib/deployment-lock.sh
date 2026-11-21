@@ -5,7 +5,7 @@ source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/python.sh"
 deployment_run() {
   local viewer_lease_library
   dotfiles_python_init || return
-  viewer_lease_library="$("$dotfiles_python_executable" -c 'from dotfiles_viewer.install_config import ROOT; print(ROOT / "native/deployment-lock.sh")')" || return
+  viewer_lease_library="$("$dotfiles_python_executable" -c 'from dotfile_viewer.install_config import ROOT; print(ROOT / "native/deployment-lock.sh")')" || return
   source "$viewer_lease_library"
   deployment_run "$@"
 }

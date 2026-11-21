@@ -43,9 +43,9 @@
 
 APT/DNF 使用专用 `docker-ce` handler；按包清单检查 CE，已有 Moby 或 `docker.io` 不会被当作 CE 跳过。仓库文件和密钥覆盖前保存到本次会话备份。已有冲突包需由操作者先处理，再手动重跑；安装器不自动删除 Moby、Podman、containerd 或容器数据。非上述发行版的 APT/DNF 主机在 Docker 待安装时预检失败，不猜测兼容仓库。镜像开关不改写 Docker 官方源。参考 [Fedora](https://docs.docker.com/engine/install/fedora/)、[Debian](https://docs.docker.com/engine/install/debian/) 和 [Ubuntu](https://docs.docker.com/engine/install/ubuntu/) 官方说明。
 
-此表解释 [docker.toml](../software/items/docker.toml) 的当前选择。Docker Desktop 的首次启动、授权和 WSL 集成开关由用户处理；安装器不执行 `docker info`、启动容器或检查服务健康。
+此表解释 [Viewer 的 Docker 声明](https://github.com/5ext9fca/dotfile-viewer/blob/main/dotfile_viewer/resources/software/items/docker.toml) 的当前选择。Docker Desktop 的首次启动、授权和 WSL 集成开关由用户处理；安装器不执行 `docker info`、启动容器或检查服务健康。
 
-macOS Docker 声明 cask/manual 两种发现方式，优先使用 cask 安装。仅检查声明的目录：已有 `/Applications/Docker.app` 时跳过，不启动 Docker 或查询版本；只有独立 Docker CLI 不会满足这些目录条件。应用完整性与版本不在存在性检查保证内。多方式声明和路径规则见 [配置语义](../docs/configuration.md#软件声明-v1)。
+macOS Docker 声明 cask/manual 两种发现方式，优先使用 cask 安装。仅检查声明的目录：已有 `/Applications/Docker.app` 时跳过，不启动 Docker 或查询版本；只有独立 Docker CLI 不会满足这些目录条件。应用完整性与版本不在存在性检查保证内。多方式声明和路径规则见 [Viewer 配置语义](https://github.com/5ext9fca/dotfile-viewer/blob/main/docs/configuration.md#软件声明-v1)。
 
 
 ## 软件来源核对
@@ -63,16 +63,46 @@ macOS Docker 声明 cask/manual 两种发现方式，优先使用 cask 安装。
 
 ## 字体
 
-字体仍由安装规则提供，二进制不入库。desktop-fonts 是可选配置专用项，采集真实的 Fontconfig/KDE/GTK 文件，不渲染设置或检查字体服务健康。
+原生 Linux 的默认和完整 profile 都安装 SF Pro Text（西文及数字）和静态 PingFang SC（简体中文）。已有文件齐全的字体家族会跳过。只安装这组字体及其依赖：
+
+```bash
+./install/linux.sh --profile linux-fonts --dry-run --yes
+./install/linux.sh --profile linux-fonts --yes
+```
+
+字体来自 [SF Pro Text](https://github.com/Xramas/apple-fonts/tree/f85da081d5083b9b1361eb5e25a37167b4d6bc1a/sf-pro-text) 和 [PingFang SC](https://github.com/Kukuair/PingFang/tree/0b6f60fd41089a4f7992ffadb6f17c54f8f5c349)，下载到当前用户的字体目录。WSL 使用独立 profile。
+
+在 KDE 或 GTK 的桌面字体设置中选 `SF Pro Text` 作界面字体，保留现有字号和等宽字体。在 `${XDG_CONFIG_HOME:-$HOME/.config}/fontconfig/conf.d/60-dotfiles-fonts.conf` 的 `<fontconfig>` 内设置以下家族顺序。已有同名别名时编辑原条目，保留其他字体规则。
+
+```xml
+<alias binding="strong">
+  <family>sans-serif</family>
+  <prefer><family>SF Pro Text</family><family>PingFang SC</family></prefer>
+</alias>
+<alias binding="strong">
+  <family>system-ui</family>
+  <prefer><family>SF Pro Text</family><family>PingFang SC</family></prefer>
+</alias>
+<alias binding="strong">
+  <family>SF Pro Text</family>
+  <accept><family>PingFang SC</family></accept>
+</alias>
+```
+
+重新打开目标应用。用 `fc-match -f '%{family[0]}\n' 'sans-serif:charset=0030'` 检查数字 0，再用 `fc-match -f '%{family[0]}\n' 'SF Pro Text:lang=zh-cn:charset=591c'` 检查“夜”的中文回退。两者应分别返回 SF Pro Text 和 PingFang SC。应用自带的字体设置也会影响结果。
+
+迁移已调好的桌面时显式选择 `desktop-fonts`。该项采集当前用户的 Fontconfig、KDE 和 GTK 文件，并带上字体依赖。普通安装和 `linux-fonts` 只安装软件，桌面配置通过快照迁移。
+
+以 Mac 应用侧栏或标题为参照时，UI 版苹方还提供连续字重和宽度轴，支持可变字体的应用可以细调强调文字的粗细或紧凑标签的宽度。正文沿用静态版时可保留相同的西文搭配。若改用 Tahoe 版，中文回退家族应选 `PingFang UI SC`；该版发布为 TTC，现有字体下载机制接受 OTF 和 TTF。[项目说明及 Tahoe 构建](https://github.com/ACT-02/PingFangUI-VF/releases/tag/21.4d1e1)
 
 ## Python 运行时
 
-共享核心使用 Python ≥3.14 和预先安装的 dotfiles-viewer；验证仅使用 3.14，不主动拒绝更高版本。请预先在当前 checkout 的 `.venv` 中准备解释器（Unix：`.venv/bin/python`；Windows：`.venv/Scripts/python.exe`），或将 `DOTFILES_PYTHON` 设为单个解释器路径。不会自动搜索其他环境或安装依赖。初始化后固定解释器路径并保留虚拟环境路径。Windows 与 WSL 分别准备各自的运行时。启动运行时独立于受管理的 Python 安装项。
+共享核心使用 Python ≥3.14 和预先安装的 dotfile-viewer；验证仅使用 3.14，不主动拒绝更高版本。请预先在当前 checkout 的 `.venv` 中准备解释器（Unix：`.venv/bin/python`；Windows：`.venv/Scripts/python.exe`），或将 `DOTFILES_PYTHON` 设为单个解释器路径。不会自动搜索其他环境或安装依赖。初始化后固定解释器路径并保留虚拟环境路径。Windows 与 WSL 分别准备各自的运行时。启动运行时独立于受管理的 Python 安装项。
 
 迁移参考为原项目 `696256f`，行为基线为本仓库 `bca3835`；原项目的私有配置不属于迁移内容。临时 UTF-8 JSON 协议仅用于当前调用，不是持久计划或重放接口。
 
-所有 plan、dry-run、resume 和 restore 同样要求运行时；帮助信息不要求。运行期间不得替换正在使用的虚拟环境。核心依赖预先安装的 dotfiles-viewer，不自动安装依赖。可通过预先安装的 Python 3.14 创建环境，例如 `python3.14 -m venv .venv`；Windows 使用已安装的 3.14 解释器运行同一 `-m venv .venv` 命令。
+所有 plan、dry-run、resume 和 restore 同样要求运行时；帮助信息不要求。运行期间不得替换正在使用的虚拟环境。核心依赖预先安装的 dotfile-viewer，不自动安装依赖。可通过预先安装的 Python 3.14 创建环境，例如 `python3.14 -m venv .venv`；Windows 使用已安装的 3.14 解释器运行同一 `-m venv .venv` 命令。
 
 ## Viewer 依赖
 
-运行前安装 dotfiles-viewer>=0.2,<0.3。默认声明与 schema 来自该包；--catalog DIR / -Catalog DIR 或 DOTFILES_CATALOG 选择外部完整目录。声明唯一来源不在本 checkout。
+运行前安装 dotfile-viewer>=0.2,<0.3。默认声明与 schema 来自该包；--catalog DIR / -Catalog DIR 或 DOTFILES_CATALOG 选择外部完整目录。声明唯一来源不在本 checkout。

@@ -49,7 +49,7 @@ try {
     (Join-Path $Context.SessionPath 'packages.result') | Set-Content (Join-Path $Fixture.State 'corrupt-stage')
     $Failed = $false
     try { Invoke-WorkflowStages $Context } catch { $Failed = $true; Write-Host $_.Exception.Message }
-    $Summary = @(Get-Content $Context.ResultsPath -Raw | ConvertFrom-Json)
+    [object[]]$Summary = Get-Content $Context.ResultsPath -Raw | ConvertFrom-Json
     Assert ($Failed -and $Summary[0].exit_code -eq 65 -and $Summary[0].status -eq 'failed') 'Corrupt metadata accepted'
     Assert ($Summary[1].status -eq 'blocked') 'Corrupt metadata did not block dependent stages'
 

@@ -27,7 +27,7 @@ class WorkflowObservationTests(unittest.TestCase):
             with self.assertRaises(ProtocolError):
                 result(context, payload)
             context = dict(style='windows', query='wsl-plan', arguments=[], native_context={})
-            payload.write_text('{"Arguments":[],"Text":[],"HostReport":"中文 path"}')
+            payload.write_text('{"Arguments":[],"Text":[],"HostReport":"中文 path"}', encoding='utf-8')
             self.assertEqual(result(context, payload)['value']['HostReport'], '中文 path')
             payload.write_text('{"Arguments":[],"Text":"not an array","HostReport":""}')
             with self.assertRaises(ProtocolError):

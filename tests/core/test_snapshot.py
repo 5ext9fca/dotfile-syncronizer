@@ -15,6 +15,15 @@ from dotfiles_core.install_config import ROOT, PLATFORMS
 
 
 class SnapshotTests(unittest.TestCase):
+    def link_directory(self, link, target):
+        try:
+            link.symlink_to(target, target_is_directory=True)
+        except OSError as exc:
+            if getattr(exc, 'winerror', None) != 1314:
+                raise
+            import _winapi
+            _winapi.CreateJunction(str(target), str(link))
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
@@ -54,7 +63,7 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(payload.read_bytes(), b'captured\x00contents')
         self.assertTrue((payload.parent / 'empty').is_dir())
         self.assertFalse((payload.parent / 'cache').exists())
-        self.assertEqual(payload.stat().st_mode & 0o111, 0o100)
+        self.assertEqual(payload.stat().st_mode & 0o111, (self.config / 'tool/value').stat().st_mode & 0o111)
         payload.write_text('changed')
         self.assertEqual(verify_archive(self.archive).document(), snapshot.document())
 
@@ -69,7 +78,7 @@ class SnapshotTests(unittest.TestCase):
                 catalog = copy.deepcopy(self.catalog)
                 catalog['tool']['config'][0]['path'] = kind
                 if kind == 'link':
-                    (self.config / kind).symlink_to(self.config / 'tool', target_is_directory=True)
+                    self.link_directory(self.config / kind, self.config / 'tool')
                 with self.assertRaises((OSError, SnapshotError)):
                     capture(catalog, self.platform, ['tool'], self.roots, self.archive)
                 self.assertFalse(self.archive.exists())
@@ -77,7 +86,10 @@ class SnapshotTests(unittest.TestCase):
 
     def test_excluded_link_not_followed(self):
         (self.config / 'tool/cache').unlink()
-        (self.config / 'tool/cache').symlink_to(self.base / 'absent')
+        target = self.base / 'excluded-target'
+        target.mkdir()
+        self.link_directory(self.config / 'tool/cache', target)
+        target.rmdir()
         self.capture()
 
     def test_nested_new_file_is_collected(self):
@@ -101,7 +113,12 @@ class SnapshotTests(unittest.TestCase):
         self.assertFalse(self.archive.exists())
 
     def test_read_failure_no_publication(self):
-        with patch('dotfiles_core.snapshot.os.open', side_effect=PermissionError('denied')):
+        original_open = os.open
+        def deny_read(path, flags, *args, **kwargs):
+            if Path(path) == self.config / 'tool/value':
+                raise PermissionError('denied')
+            return original_open(path, flags, *args, **kwargs)
+        with patch('dotfile_viewer.snapshot.os.open', new=deny_read):
             with self.assertRaises(PermissionError):
                 self.capture()
         self.assertFalse(self.archive.exists())

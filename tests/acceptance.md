@@ -2,6 +2,16 @@
 
 本文件记录各次变更的实际验证结果；历史记录不代表当前版本或未执行平台已通过验证。测试运行方法及 CI 状态见 [测试与验证](README.md)。
 
+## 2026-11-24 · Windows 严格套件修复
+
+原生 Windows 11 x64，Windows PowerShell 5.1，Git for Windows Bash，checkout 的 Python 3.14.0 和本地 editable Viewer 0.2.0。各次完整检查使用独立的临时部署锁。
+
+- 修正测试的读失败注入范围后，Python 套件能够正常结束。首轮 163 项中有 7 个断言失败、3 个错误及 11 项跳过。复核宿主路径分隔符、UTF-8 输入输出、NTFS 权限及链接夹具后，重跑剩余一个失效联接的准备错误。改为创建联接后删除测试目标，最终 163 项中 152 项通过、11 项跳过。
+- 首轮完整检查的跨 shell 对照失败。Git Bash 将 POSIX 路径写进请求文件，Windows Python 无法直接打开该路径。对比原始输出还发现二次传输产生了重复的 CR。修复后，`tests/install-parity.ps1` 在 20 种平台、镜像和 WSL 选择组合上逐行一致。Windows PowerShell 5.1 下也验证了不显式指定 `-Items` 的 `install/plan.ps1 -Platform windows`。
+- 单独运行 `tests/execution-contract.ps1` 复现报告字段断言失败。在 PowerShell 5.1 中核实，测试将反序列化得到的行数组又包装了一层。修正读取后，严格套件中的执行契约和数据契约均通过。安装器默认及 `windows-full` 预演通过，MacType 均按已安装跳过。
+- 首轮 `tests/check.ps1 -Suite all -Strict` 为 25 项通过、1 项失败（跨 shell 计划对照）、56 项平台跳过。修复后从头重跑同一入口，26 项通过、0 项失败、56 项平台跳过，退出码 0。将输出逐项与共享 manifest 比对，全部 82 项均有预期结果。快照入口另运行 24 项集成用例，其中 1 项限 macOS。
+- Viewer 严格套件运行 26 项，24 项通过、2 项限 Unix。两个修改过的 Bash 文件通过 `bash -n`，PowerShell 文件通过语法解析。已复核两仓库的 README、AGENTS、架构及相关安装、测试文档。此次未运行原生 Linux、WSL、macOS、ShellCheck 或 CI。
+
 ## 2026-11-24 · Windows 默认安装 MacType
 
 原生 Windows 11 x64，Windows PowerShell 5.1，Python 3.14.0。WinGet 检测到本机已有 `MacType.MacType` 2025.6.9。

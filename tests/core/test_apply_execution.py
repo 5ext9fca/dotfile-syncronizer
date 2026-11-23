@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from dotfiles_core.apply_execution import execute, summaries
@@ -64,7 +65,8 @@ class ApplyExecutionTests(unittest.TestCase):
                                  [('transaction', '/a', 1)])
                 values = {r['key']: r['value'] for r in read_stage(native.documents['/metadata'])}
                 self.assertEqual(values['exit_code'], str(code))
-                self.assertEqual(values['recovery_journal'], '/session/journal.' + ('tsv' if style == 'unix' else 'jsonl'))
+                filename = 'journal.tsv' if style == 'unix' else 'journal.jsonl'
+                self.assertEqual(values['recovery_journal'], os.path.join('/session', filename))
                 self.assertEqual(native.calls[0:2], ['validate', ('publish', '/metadata', 'create')])
 
     def test_dry_run_and_empty_plan_do_not_create_journal(self):

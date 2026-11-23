@@ -28,7 +28,7 @@ try {
         $NewSession = Join-Path $Temp 'backups/workflow-resume-cli'
         $Saved = @(Read-DataContract workflow-request ([IO.File]::ReadAllText((Join-Path $NewSession 'request.tsv'))))[0]
         Assert ($Saved.resume_parent -eq $Temp -and $Saved.selected_stages -eq 'packages' -and $Saved.china_mirrors -eq '0') 'Windows CLI lost resume context'
-        $Rows = @(Get-Content -LiteralPath $NewReport -Raw | ConvertFrom-Json)
+        [object[]]$Rows = Get-Content -LiteralPath $NewReport -Raw | ConvertFrom-Json
         Assert (@($Rows | Where-Object { $_.status -eq 'planned' }).Count -eq 1) 'Windows CLI expanded resume selection'
         Assert (-not (Test-Path (Join-Path $Temp 'config/Packages'))) 'Windows dry-run deployed packages'
         Reject { & $InstallEntry -Resume $Temp -DryRun -OnlyStage packages }

@@ -75,6 +75,8 @@ macOS Docker 声明 cask/manual 两种发现方式，优先使用 cask 安装。
 .\install\windows.ps1 -Profile windows-fonts
 ```
 
+Windows 默认安装和 `windows-full` 还会通过 WinGet 安装 MacType（`MacType.MacType`），检测到已安装时跳过。加载模式和渲染配置由用户在 MacType 中选择。`windows-fonts` 仅安装两款字体。
+
 Windows 安装器将字体注册到当前用户。对应文件和注册项齐全时跳过。要让经典桌面使用这组字体，单独将标题、小标题、菜单、状态、消息和图标标签的字体设为 `SF Pro Text`，保留原字号和字重。
 
 支持字体列表的应用应按顺序指定 `SF Pro Text, PingFang SC`。以 WPF 为例，可设置 `FontFamily="SF Pro Text, PingFang SC"`。在 Windows 11 上用 `Nocturne 03:42 夜曲` 实测，西文和数字使用 SF Pro Text，中文在 400、500、600 三档分别使用苹方的常规、中等和半粗字重。仅指定 SF Pro Text 时，同一段中文回退到微软雅黑。[重启后的字体实测](../tests/acceptance.md#2026-11-22--windows-重启后复核桌面字体和应用内回退)

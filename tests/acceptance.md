@@ -2,6 +2,15 @@
 
 本文件记录各次变更的实际验证结果；历史记录不代表当前版本或未执行平台已通过验证。测试运行方法及 CI 状态见 [测试与验证](README.md)。
 
+## 2026-11-24 · Windows 默认安装 MacType
+
+原生 Windows 11 x64，Windows PowerShell 5.1，Python 3.14.0。WinGet 检测到本机已有 `MacType.MacType` 2025.6.9。
+
+- 运行 `.\install\windows.ps1 -DryRun`，再分别指定 `-Profile windows-full` 和 `-Profile windows-fonts`。三次预演均通过。前两次将 MacType 标记为 `already-installed`，字体专用预演只选择 SF Pro Text 和 PingFang SC。
+- 用仓库的 WinGet 测试程序提供空的软件清单，重跑默认安装预演。MacType 标记为 `planned`，生成的命令包含 `install --id MacType.MacType --exact --source winget`。测试程序只收到查询命令。
+- 单独运行 `install/plan.ps1 -Platform windows` 时，PowerShell 5.1 因默认路径为空报错。显式传入 Viewer 声明目录作为 `-Items` 后生成了 MacType 安装计划。
+- 已复核安装说明、两仓库的配置说明及 AGENTS.md。此次没有实际安装软件、修改本机渲染设置或运行 syncronizer 全套测试。Viewer 套件结果见其仓库同日记录。
+
 ## 2026-11-22 · Windows 重启后复核桌面字体和应用内回退
 
 Windows 11 Pro x64（26300），开机约 6 分钟。只读检查，沿用上次的桌面设置。

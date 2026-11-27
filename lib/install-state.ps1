@@ -10,6 +10,16 @@ function Get-WindowsItemState {
     param([hashtable]$Item, [hashtable]$Context)
     if ($Item.discovery) { return Get-InstallDiscoveryState $Item $Context }
     if ($Item.probe_command -and (Get-Command $Item.probe_command -ErrorAction SilentlyContinue)) { return 'present' }
+    if ($Item.method -eq 'font-download') {
+        $Directory = Join-Path $env:LOCALAPPDATA "Microsoft/Windows/Fonts/$($Item.id)"
+        $Fonts = Get-Item 'HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts' -ErrorAction SilentlyContinue
+        foreach ($File in $Item.font_files.Split(' ')) {
+            $Path = Join-Path $Directory $File
+            $Name = Get-WindowsFontRegistryName $File
+            if (-not $Fonts -or $Fonts.GetValue($Name) -ne $Path -or -not [IO.File]::Exists($Path)) { return '' }
+        }
+        return 'present'
+    }
     if ($Item.method -eq 'msvc') {
         $VsWhere = Join-Path $Context.VsInstallerRoot 'vswhere.exe'
         if (Test-Path -LiteralPath $VsWhere) {

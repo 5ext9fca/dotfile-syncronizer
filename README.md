@@ -45,4 +45,4 @@ Windows 可用 `py -3.14 -m venv .venv` 创建环境，执行上述 pip 命令�
 
 失败后检查报告和备份，处理原因后手动重跑。未知额外文件保留，不跨软件安装与配置阶段回滚，不自动重试或回收遗留部署锁。历史 journal 恢复命令已移除，已有资料不删除。
 
-查看、编辑、声明维护和独立快照操作见 Viewer 文档。详细安装命令见 [安装](install/README.md)，组合流程见 [快照](snapshot/README.md)，验证见 [测试](tests/README.md)。
+配置编辑、声明维护和独立快照操作见 [Viewer 文档](https://github.com/5ext9fca/dotfile-viewer)。详细安装命令见 [安装](install/README.md)，组合流程见 [快照](snapshot/README.md)，验证见 [测试](tests/README.md)。

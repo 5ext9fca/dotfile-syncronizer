@@ -8,6 +8,14 @@ $ErrorActionPreference = 'Stop'
 $RepoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $CurrentHost = if ($env:OS -eq 'Windows_NT') { 'windows' } elseif ((& uname -s) -eq 'Darwin') { 'macos' } else { 'linux' }
 $Bash = if ($env:DOTFILES_TEST_BASH) { $env:DOTFILES_TEST_BASH } else { 'bash' }
+if ($CurrentHost -eq 'windows' -and -not $env:DOTFILES_TEST_BASH) {
+    # Use Git Bash with the native Windows checkout, even when PATH contains the WSL launcher.
+    $Git = Get-Command git.exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($Git) {
+        $GitBash = Join-Path (Split-Path (Split-Path $Git.Source -Parent) -Parent) 'bin/bash.exe'
+        if (Test-Path -LiteralPath $GitBash -PathType Leaf) { $Bash = $GitBash }
+    }
+}
 $PowerShell = if ($env:DOTFILES_TEST_POWERSHELL) { $env:DOTFILES_TEST_POWERSHELL } else { (Get-Process -Id $PID).Path }
 $Python = if ($env:DOTFILES_TEST_PYTHON) { $env:DOTFILES_TEST_PYTHON } elseif ($env:DOTFILES_PYTHON) { $env:DOTFILES_PYTHON } elseif ($CurrentHost -eq 'windows') { Join-Path $RepoRoot '.venv/Scripts/python.exe' } else { Join-Path $RepoRoot '.venv/bin/python' }
 function Invoke-CheckCommand {

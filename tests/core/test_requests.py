@@ -83,10 +83,11 @@ class RequestTests(unittest.TestCase):
                 script_path = root / 'request test.ps1'
                 script_path.write_text('''param($Repo, $Source)
 $ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 . (Join-Path $Repo 'lib/data-contract.ps1')
 Invoke-DotfilesRequest contract-write @{kind='git-result';text=[IO.File]::ReadAllText($Source, [Text.Encoding]::UTF8)}
 ''', encoding='utf-8-sig')
-                process = subprocess.run([powershell, '-NoProfile', '-File', str(script_path), str(ROOT), str(source)], env=env, capture_output=True, text=True)
+                process = subprocess.run([powershell, '-NoProfile', '-File', str(script_path), str(ROOT), str(source)], env=env, capture_output=True, encoding='utf-8')
                 self.assertEqual(process.returncode, 0, process.stderr)
                 self.assertEqual(process.stdout, '# dotfiles|git-result|1\nkey|status\n' + payload + '\n')
                 self.assertEqual(list(scratch.iterdir()), [])

@@ -30,7 +30,7 @@ class NativePreflightTests(unittest.TestCase):
         # Construction only: these tests do not launch the native adapter.
         with patch('dotfiles_core.native_preflight.native_filesystem'):
             self.native = NativePreflight('unix', '/native-shell', Paths())
-        self.inputs = Inputs(str(ROOT), 'macos', 'unix', 'macos', 'test', '/config', '/backup',
+        self.inputs = Inputs(ROOT.as_posix(), 'macos', 'unix', 'macos', 'test', '/config', '/backup',
                              True, False, False, native={'brew_cmd': '/brew', 'brew_prefix': '/prefix'})
 
     def test_installation_uses_current_context_and_shared_selection(self):
@@ -39,7 +39,7 @@ class NativePreflightTests(unittest.TestCase):
             factory.return_value.plan.return_value = items
             self.assertEqual(self.native.installation(self.inputs, {'install': 'tool'}, '/session', 'resume'), items)
         self.assertEqual(factory.call_args.args, ('unix', '/native-shell', 'macos|1|/brew|/prefix|/session/packages-backups|||'))
-        factory.return_value.plan.assert_called_once_with(str(ROOT / 'software/items'), 'macos', False, False, 'tool', 'resume')
+        factory.return_value.plan.assert_called_once_with((ROOT / 'software/items').as_posix(), 'macos', False, False, 'tool', 'resume')
 
     def test_planning_scratch_is_temporary_and_uses_preview(self):
         observed = []

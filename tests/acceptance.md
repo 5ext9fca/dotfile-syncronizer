@@ -36,6 +36,57 @@ macOS ARM64，Python 3.14.10、系统 zsh 5.9，使用更新后的 Viewer 0.2.0 
 
 未运行原生 Linux、Windows、WSL 验证；模拟和平台图检查不代表原生覆盖。未采集或改写真实用户配置。Viewer 功能检查发现的既有缺口记录在其 `tests/acceptance.md`，本次仅完成更名和依赖联动。
 
+## 2026-11-24 · Windows 严格套件修复
+
+原生 Windows 11 x64，Windows PowerShell 5.1，Git for Windows Bash，checkout 的 Python 3.14.0 和本地 editable Viewer 0.2.0。各次完整检查使用独立的临时部署锁。
+
+- 修正测试的读失败注入范围后，Python 套件能够正常结束。首轮 163 项中有 7 个断言失败、3 个错误及 11 项跳过。复核宿主路径分隔符、UTF-8 输入输出、NTFS 权限及链接夹具后，重跑剩余一个失效联接的准备错误。改为创建联接后删除测试目标，最终 163 项中 152 项通过、11 项跳过。
+- 首轮完整检查的跨 shell 对照失败。Git Bash 将 POSIX 路径写进请求文件，Windows Python 无法直接打开该路径。对比原始输出还发现二次传输产生了重复的 CR。修复后，`tests/install-parity.ps1` 在 20 种平台、镜像和 WSL 选择组合上逐行一致。Windows PowerShell 5.1 下也验证了不显式指定 `-Items` 的 `install/plan.ps1 -Platform windows`。
+- 单独运行 `tests/execution-contract.ps1` 复现报告字段断言失败。在 PowerShell 5.1 中核实，测试将反序列化得到的行数组又包装了一层。修正读取后，严格套件中的执行契约和数据契约均通过。安装器默认及 `windows-full` 预演通过，MacType 均按已安装跳过。
+- 首轮 `tests/check.ps1 -Suite all -Strict` 为 25 项通过、1 项失败（跨 shell 计划对照）、56 项平台跳过。修复后从头重跑同一入口，26 项通过、0 项失败、56 项平台跳过，退出码 0。将输出逐项与共享 manifest 比对，全部 82 项均有预期结果。快照入口另运行 24 项集成用例，其中 1 项限 macOS。
+- Viewer 严格套件运行 26 项，24 项通过、2 项限 Unix。两个修改过的 Bash 文件通过 `bash -n`，PowerShell 文件通过语法解析。已复核两仓库的 README、AGENTS、架构及相关安装、测试文档。此次未运行原生 Linux、WSL、macOS、ShellCheck 或 CI。
+
+## 2026-11-24 · Windows 默认安装 MacType
+
+原生 Windows 11 x64，Windows PowerShell 5.1，Python 3.14.0。WinGet 检测到本机已有 `MacType.MacType` 2025.6.9。
+
+- 运行 `.\install\windows.ps1 -DryRun`，再分别指定 `-Profile windows-full` 和 `-Profile windows-fonts`。三次预演均通过。前两次将 MacType 标记为 `already-installed`，字体专用预演只选择 SF Pro Text 和 PingFang SC。
+- 用仓库的 WinGet 测试程序提供空的软件清单，重跑默认安装预演。MacType 标记为 `planned`，生成的命令包含 `install --id MacType.MacType --exact --source winget`。测试程序只收到查询命令。
+- 单独运行 `install/plan.ps1 -Platform windows` 时，PowerShell 5.1 因默认路径为空报错。显式传入 Viewer 声明目录作为 `-Items` 后生成了 MacType 安装计划。
+- 已复核安装说明、两仓库的配置说明及 AGENTS.md。此次没有实际安装软件、修改本机渲染设置或运行 syncronizer 全套测试。Viewer 套件结果见其仓库同日记录。
+
+## 2026-11-22 · Windows 重启后复核桌面字体和应用内回退
+
+Windows 11 Pro x64（26300），开机约 6 分钟。只读检查，沿用上次的桌面设置。
+
+- 通过 Win32 回读六项桌面字体，均为 SF Pro Text。八份 SF Pro Text 和六份 PingFang SC 的用户注册路径均存在，系统级 GDI 字体链接仍指向系统目录中的苹方常规体。
+- 重复上次的 WinForms `TextRenderer.DrawText` 对照。数字 0 和“夜、曲”的字形摘要与重启前一致；指定 SF Pro Text 绘制的两个汉字与直接指定苹方的样本仍不同。此比较无法识别实际回退家族。
+- 在 WPF 以 `zh-CN` 对 `Nocturne 03:42 夜曲` 排版并读取 `GlyphRun.GlyphTypeface.FontUri`。单独指定 SF Pro Text 时，西文及数字使用 SF Pro Text，中文在 400、500 使用 `msyh.ttc`，在 600 使用 `msyhbd.ttc`。显式指定 `SF Pro Text, PingFang SC` 时，两段分别使用对应家族的 Regular、Medium、Semibold 文件。
+- 自动审批拦截了独立 Chrome 进程的无头字体检查，未取得浏览器实测数据。本次只复核字体；未重跑安装器全套测试。
+
+## 2026-11-22 · 原生 Windows 桌面字体
+
+Windows 11 Pro x64（26300），checkout 的 Python 3.14.0 虚拟环境，editable Viewer 0.2.0。实机应用使用字体专用 profile；测试未采集本机配置。
+
+- `install/windows.ps1 -Profile windows-fonts -DryRun` 显示保留已注册的六份苹方，计划安装 SF Pro Text。实际运行安装八份 SF Pro Text，再次运行两项都报告 `already-installed`。
+- Windows PowerShell 5.1 的默认及完整 profile 预览起初因传给 Python 的引号被移除而找不到部署锁脚本。修复取路径的参数后，`-Profile windows -DryRun` 和 `-Profile windows-full -DryRun` 均通过。单独运行 `tests/install-items.ps1` 通过 76 个共享用例及处理器检查。
+- 本机备份六项桌面字体及有关注册表原值，通过 Win32 更改字体后回读，六项均为 SF Pro Text；逐字节比较六份 LOGFONT 中字体名之前的字段，字号、字重等均保留。机器级 GDI 回退首项指向系统目录中的苹方常规体，其 SHA-256 与原用户字体一致。
+- 八份 SF Pro Text 的字符映射都包含数字 0，苹方包含“夜”。当前会话的 WinForms 字形比较中，“夜、曲”与直接指定苹方的结果不同。本次未重启，重启后各应用的实际回退尚未验证。
+- 在临时目录以本机 Arial 字体模拟下载，声明不同家族，处理器在创建安装目标之前报错。Git Bash 和 Windows Python 的路径格式及空行导致原始 `tests/install-parity.ps1` 失败；分别转换路径并忽略输出空行后，20 种平台、镜像和环境组合的全部非空计划行一致。
+- 首轮严格检查受到会话中断。修复 PowerShell 5.1 入口后，以独立测试锁重新运行 `tests/check.ps1 -Strict`，21 项通过、4 项失败、29 项平台跳过。两个报告契约用例断言失败；另两个套件都在快照读失败用例中将临时文件的创建也模拟成权限错误，Windows 不断重试并耗用内存，确认调用栈后终止了对应的测试子进程。单独限制测试进程的 `tempfile.TMP_MAX=64` 重跑 Python 套件，163 项中报告 8 个断言失败、12 个错误及 11 项跳过。
+- 已复核两仓库的 README、AGENTS、配置及安装文档。原生 Linux、WSL、macOS 和 CI 未运行。
+
+## 2026-11-22 · 对接 dotfile-viewer 和 Linux 桌面字体
+
+Fedora 45 KDE（原生 x86_64、DNF）、Python 3.14.10，checkout 的 `.venv` 安装新版 Viewer 0.2.0。本轮按操作请求配置了桌面；快照回归另用临时 HOME 和合成内容。
+
+- `./install/linux.sh --dry-run --yes` 的默认选择（显式 `--profile linux`）、`linux-full` 和 `linux-fonts` 均通过。执行两次 `./install/linux.sh --profile linux-fonts --yes`，首次保留已有的六个 PingFang SC 文件、安装八个 SF Pro Text 文件，第二次两项均跳过。
+- 通过 Viewer 的版本检查、备份和显式硬链接拆分保存四个桌面配置，再通知 KDE 更新当前会话。KDE、GTK portal 均返回 SF Pro Text。用 `pango-view --serialize-to` 检查 Regular、Medium、Semibold，“夜曲”均使用 PingFang SC，“Nocturne 03:42”均使用 SF Pro Text；`fc-match monospace` 仍为 JetBrainsMono Nerd Font。
+- 在四份合成配置上通过 Viewer 导出、检查、应用预览、应用及重复应用。归档含字体声明，恢复的配置内容一致，重复应用四项均跳过。安装器的 `snapshot/snapshot.sh restore --dry-run` 同样通过。
+- 首轮 `./tests/check.sh --strict` 为 26 通过、5 失败、23 项平台跳过。Linux 入口测试的夹具缺安装目录并沿用旧 catalog 定位；计划解释读取 Viewer 声明后仍从旧目录枚举排除项。两处修正后用例通过。镜像、apply 契约、执行契约在与本机操作并行时失败，分别用独立部署锁重跑通过。
+- 最终设置独立测试锁再跑完整 `./tests/check.sh --strict`，31 项通过、0 失败、23 项平台跳过。构建 Viewer wheel 并逐字节核对其中的两份字体声明、桌面依赖及两个 Linux profile，结果一致。
+- Viewer 严格检查 24 项通过。安装器 Python 回归 163 项，其中 PowerShell 包装器和 macOS 专用用例各跳过一项。变更的 shell 脚本通过 `bash -n`；本机无 ShellCheck 和 PowerShell。已复核两项目 README、AGENTS、配置说明、安装与快照文档。原生 APT、Pacman、WSL、macOS、Windows 未执行。
+
 ## Agent 软件声明维护 skill（2026-11-16）
 
 本次只新增 `skills/maintain-software/SKILL.md` 并更新文档入口，没有修改软件声明、profile 或执行代码。验证环境为 macOS，checkout `.venv/bin/python` 为 Python 3.15.0a8。
@@ -85,3 +136,7 @@ macOS ARM64、Python 3.14.10，安装本地 Viewer 0.2.0 wheel；`pip check` 通
 - 本机 Zsh 启动文件语法、非交互静默、工具 PATH、静态插件再生成、compaudit、禁网 PTY 启动及 prompt 渲染通过。Trace 确认补全后端执行一次。首次 PTY 在沙箱内因 Atuin 无法创建本地目录而失败，主机复验通过。中间配置出现函数清理命令拼写问题，修正后复验通过。
 - 五次 `zsh -i -c exit` 的中位数从 620 ms 降到最终的 340 ms（330–610 ms），空配置低于计时显示精度。zprof 显示 mise 钩子是主要耗时之一。PTY 确认 Atuin、fzf-tab、原生上下键与逐词移动绑定；外部终端实际按键和视觉效果留作人工确认。
 - 已复核根 README、安装指南、应用配置说明和 AGENTS.md；维护与恢复步骤在安装指南。
+
+## 2026-11-27 · 合并远端字体与 Windows 修复
+
+macOS ARM64、Python 3.14。重新安装合并后的 Viewer 后运行 `./install/macos.sh --dry-run`，packages 阶段完成预演。运行 `.venv/bin/python -m unittest discover -s tests/core`，163 项中 162 通过、1 项跳过。本轮未重跑完整严格套件或其他操作系统的原生检查。

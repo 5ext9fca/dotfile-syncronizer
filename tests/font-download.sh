@@ -52,9 +52,14 @@ plan="$(install_items_plan "$repo_root/tests/fixtures/install/font-download" lin
 install_run() { shift; printf '<%s>' "$@"; }
 output="$(install_font_download "$plan" "$context")"
 [[ "$output" == *'<Sample Sans>'* ]]
-# Defaults contain Noto and never download PingFang, on every native branch.
+# All three native branches use the declared UI families and retain Noto.
 for platform in linux.apt linux.dnf linux.pacman;do
   plan="$(install_items_plan "$repo_root/software/items" "$platform" 0 0 0)"
-  [[ "$plan" == *'noto-cjk|'* && "$plan" != *'pingfang-sc|'* ]]
+  [[ "$plan" == *'noto-cjk|'* ]]
+  for id in sf-pro-text pingfang-sc; do
+    record="$(awk -F '|' -v id="$id" '$1==id' <<< "$plan")"
+    [[ "$(install_field "$record" method)" == font-download ]]
+    [[ "$(install_field "$record" environments)" == native ]]
+  done
 done
 printf 'Declarative font download and default selection tests passed.\n'

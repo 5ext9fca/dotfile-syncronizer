@@ -167,10 +167,10 @@ class NativeAdapterTests(unittest.TestCase):
                 target = root / 'report.txt'
                 document = '中文 "literal" $() `value`\nsecond line\n'
                 adapter.invoke('publish-report', {'path': str(target), 'text': document, 'mode': 'create'})
-                self.assertEqual(target.read_text(), document)
+                self.assertEqual(target.read_text(encoding='utf-8'), document)
                 with self.assertRaises(AdapterError):
                     adapter.invoke('publish-report', {'path': str(target), 'text': 'replacement', 'mode': 'create'})
-                self.assertEqual(target.read_text(), document)
+                self.assertEqual(target.read_text(encoding='utf-8'), document)
                 adapter.invoke('publish-report', {'path': str(target), 'text': 'new', 'mode': 'replace'})
                 self.assertEqual(target.read_text(), 'new')
                 executable = root / 'tool.exe'

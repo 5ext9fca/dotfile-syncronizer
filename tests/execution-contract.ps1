@@ -45,7 +45,7 @@ try {
     $Failed = $false
     try { Invoke-WorkflowStages $Context } catch { $Failed = $true; Write-Host $_.Exception.Message }
     Assert ((Get-Content (Join-Path $Temp 'running-install.tsv') -Raw) -match 'tool\|running\|') 'Missing durable item start'
-    $Rows = @(Get-Content $Context.ResultsPath -Raw | ConvertFrom-Json)
+    [object[]]$Rows = Get-Content $Context.ResultsPath -Raw | ConvertFrom-Json
     $ExpectedFields = @(Get-Content (Join-Path $Repo 'workflow/schema/report-fields.tsv') | Where-Object { -not $_.StartsWith('#') } | ForEach-Object { $_.Split("`t")[0] } | Sort-Object)
     $ActualFields = @($Rows[0].PSObject.Properties.Name | Sort-Object)
     Assert (($ExpectedFields -join '|') -ceq ($ActualFields -join '|')) 'Report field contract differs'

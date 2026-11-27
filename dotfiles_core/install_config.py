@@ -5,12 +5,15 @@ from dotfile_viewer.install_config import read_items as _read_items
 from dotfile_viewer.api import catalog_root
 ROOT = Path(__file__).resolve().parents[1]
 
+def item_directory(directory=None):
+    if directory is None or Path(directory).resolve() == ROOT / "software/items":
+        return catalog_root() / "software/items"
+    return Path(directory)
+
 def read_items(directory, platform, schema_directory=None):
-    if Path(directory).resolve() == ROOT / "software/items":
-        directory = catalog_root() / "software/items"
     if schema_directory and Path(schema_directory).resolve() == ROOT / 'install/schema':
         schema_directory = None
-    return _read_items(Path(directory), platform, **({'schema_directory': schema_directory} if schema_directory else {}))
+    return _read_items(item_directory(directory), platform, **({'schema_directory': schema_directory} if schema_directory else {}))
 
 def raw_rows(items: list[dict[str, str]]) -> list[str]:
     excluded = {'action', 'reason', 'source_origin', 'state', 'schema_version'}

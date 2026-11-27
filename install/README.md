@@ -61,9 +61,9 @@ zsh -f "${XDG_CONFIG_HOME:-$HOME/.config}/zsh/regenerate.zsh"
 
 APT/DNF 使用专用 `docker-ce` handler；按包清单检查 CE，已有 Moby 或 `docker.io` 不会被当作 CE 跳过。仓库文件和密钥覆盖前保存到本次会话备份。已有冲突包需由操作者先处理，再手动重跑；安装器不自动删除 Moby、Podman、containerd 或容器数据。非上述发行版的 APT/DNF 主机在 Docker 待安装时预检失败，不猜测兼容仓库。镜像开关不改写 Docker 官方源。参考 [Fedora](https://docs.docker.com/engine/install/fedora/)、[Debian](https://docs.docker.com/engine/install/debian/) 和 [Ubuntu](https://docs.docker.com/engine/install/ubuntu/) 官方说明。
 
-此表解释 [docker.toml](../software/items/docker.toml) 的当前选择。Docker Desktop 的首次启动、授权和 WSL 集成开关由用户处理；安装器不执行 `docker info`、启动容器或检查服务健康。
+此表解释 [Viewer 的 Docker 声明](https://github.com/5ext9fca/dotfile-viewer/blob/main/dotfile_viewer/resources/software/items/docker.toml) 的当前选择。Docker Desktop 的首次启动、授权和 WSL 集成开关由用户处理；安装器不执行 `docker info`、启动容器或检查服务健康。
 
-macOS Docker 声明 cask/manual 两种发现方式，优先使用 cask 安装。仅检查声明的目录：已有 `/Applications/Docker.app` 时跳过，不启动 Docker 或查询版本；只有独立 Docker CLI 不会满足这些目录条件。应用完整性与版本不在存在性检查保证内。多方式声明和路径规则见 [配置语义](../docs/configuration.md#软件声明-v1)。
+macOS Docker 声明 cask/manual 两种发现方式，优先使用 cask 安装。仅检查声明的目录：已有 `/Applications/Docker.app` 时跳过，不启动 Docker 或查询版本；只有独立 Docker CLI 不会满足这些目录条件。应用完整性与版本不在存在性检查保证内。多方式声明和路径规则见 [Viewer 配置语义](https://github.com/5ext9fca/dotfile-viewer/blob/main/docs/configuration.md#软件声明-v1)。
 
 
 ## 软件来源核对
@@ -81,7 +81,50 @@ macOS Docker 声明 cask/manual 两种发现方式，优先使用 cask 安装。
 
 ## 字体
 
-字体仍由安装规则提供，二进制不入库。desktop-fonts 是可选配置专用项，采集真实的 Fontconfig/KDE/GTK 文件，不渲染设置或检查字体服务健康。
+原生 Linux 和 Windows 的默认及完整 profile 都包含 SF Pro Text（西文及数字）和静态 PingFang SC（简体中文）。也可以单独安装这组字体。
+
+```bash
+./install/linux.sh --profile linux-fonts --dry-run --yes
+./install/linux.sh --profile linux-fonts --yes
+```
+
+```powershell
+.\install\windows.ps1 -Profile windows-fonts -DryRun
+.\install\windows.ps1 -Profile windows-fonts
+```
+
+Windows 默认安装和 `windows-full` 还会通过 WinGet 安装 MacType（`MacType.MacType`），检测到已安装时跳过。加载模式和渲染配置由用户在 MacType 中选择。`windows-fonts` 仅安装两款字体。
+
+Windows 安装器将字体注册到当前用户。对应文件和注册项齐全时跳过。要让经典桌面使用这组字体，单独将标题、小标题、菜单、状态、消息和图标标签的字体设为 `SF Pro Text`，保留原字号和字重。
+
+支持字体列表的应用应按顺序指定 `SF Pro Text, PingFang SC`。以 WPF 为例，可设置 `FontFamily="SF Pro Text, PingFang SC"`。在 Windows 11 上用 `Nocturne 03:42 夜曲` 实测，西文和数字使用 SF Pro Text，中文在 400、500、600 三档分别使用苹方的常规、中等和半粗字重。仅指定 SF Pro Text 时，同一段中文回退到微软雅黑。[重启后的字体实测](../tests/acceptance.md#2026-11-22--windows-重启后复核桌面字体和应用内回退)
+
+经典 GDI 的简中回退需要管理员配置。先为所有用户安装苹方常规体，在 `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink` 的多字符串值 `SF Pro Text` 首行填入系统字体目录中的实际文件名和字体家族，例如 `PingFangSC-Regular.otf,PingFang SC`，保留已有回退项。保存工作后重启 Windows，再到目标应用查看。本机重启后链接仍在，但 WinForms 中“夜曲”的字形与直接指定苹方时仍有差异，实际回退家族尚未确认。若考虑用 MacType 调整笔画边缘或浓淡，先在目标应用核对实际字体，再用同一字号比较渲染效果。[微软字体链接说明](https://learn.microsoft.com/en-us/globalization/fonts-layout/fonts)
+
+字体来自 [SF Pro Text](https://github.com/Xramas/apple-fonts/tree/f85da081d5083b9b1361eb5e25a37167b4d6bc1a/sf-pro-text) 和 [PingFang SC](https://github.com/Kukuair/PingFang/tree/0b6f60fd41089a4f7992ffadb6f17c54f8f5c349)，下载到当前用户的字体目录。WSL 使用独立 profile。
+
+在 KDE 或 GTK 的桌面字体设置中选 `SF Pro Text` 作界面字体，保留现有字号和等宽字体。在 `${XDG_CONFIG_HOME:-$HOME/.config}/fontconfig/conf.d/60-dotfiles-fonts.conf` 的 `<fontconfig>` 内设置以下家族顺序。已有同名别名时编辑原条目，保留其他字体规则。
+
+```xml
+<alias binding="strong">
+  <family>sans-serif</family>
+  <prefer><family>SF Pro Text</family><family>PingFang SC</family></prefer>
+</alias>
+<alias binding="strong">
+  <family>system-ui</family>
+  <prefer><family>SF Pro Text</family><family>PingFang SC</family></prefer>
+</alias>
+<alias binding="strong">
+  <family>SF Pro Text</family>
+  <accept><family>PingFang SC</family></accept>
+</alias>
+```
+
+重新打开目标应用。用 `fc-match -f '%{family[0]}\n' 'sans-serif:charset=0030'` 检查数字 0，再用 `fc-match -f '%{family[0]}\n' 'SF Pro Text:lang=zh-cn:charset=591c'` 检查“夜”的中文回退。两者应分别返回 SF Pro Text 和 PingFang SC。应用自带的字体设置也会影响结果。
+
+迁移已调好的桌面时显式选择 `desktop-fonts`。该项采集当前用户的 Fontconfig、KDE 和 GTK 文件，并带上字体依赖。普通安装和 `linux-fonts` 只安装软件，桌面配置通过快照迁移。
+
+以 Mac 应用侧栏或标题为参照时，UI 版苹方还提供连续字重和宽度轴，支持可变字体的应用可以细调强调文字的粗细或紧凑标签的宽度。正文沿用静态版时可保留相同的西文搭配。若改用 Tahoe 版，中文回退家族应选 `PingFang UI SC`；该版发布为 TTC，现有字体下载机制接受 OTF 和 TTF。[项目说明及 Tahoe 构建](https://github.com/ACT-02/PingFangUI-VF/releases/tag/21.4d1e1)
 
 ## Python 运行时
 

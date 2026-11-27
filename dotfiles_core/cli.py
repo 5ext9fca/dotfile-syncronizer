@@ -125,7 +125,7 @@ def main() -> int:
             lines = read_result(args.result, args.expected_operation, args.code)
             if not args.verify_only:
                 for line in lines:
-                    print(line)
+                    sys.stdout.buffer.write((line + '\n').encode('utf-8'))
         else:
             document, lines = dispatch(args)
             if args.json:

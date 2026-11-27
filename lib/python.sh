@@ -6,6 +6,12 @@ dotfiles_python_init() {
   local selected resolved parent
   [[ -z "${dotfiles_python_executable:-}" ]] || return 0
   selected="${DOTFILES_PYTHON-$python_library_dir/../.venv/bin/python}"
+  case "$OSTYPE" in
+    msys*|cygwin*)
+      selected="${DOTFILES_PYTHON-$python_library_dir/../.venv/Scripts/python.exe}"
+      if [[ "$selected" == *[\\/]* ]]; then selected="$(cygpath -u "$selected")" || return; fi
+      ;;
+  esac
   [[ -n "$selected" ]] || { printf 'error: DOTFILES_PYTHON must name one interpreter\n' >&2; return 2; }
   if [[ "$selected" == */* ]]; then
     [[ -f "$selected" && -x "$selected" ]] || { printf 'error: Python interpreter unavailable: %s\n' "$selected" >&2; return 2; }

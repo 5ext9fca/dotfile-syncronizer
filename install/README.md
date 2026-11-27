@@ -24,6 +24,16 @@
 
 默认 profile 是较小的已声明软件集合，*-full 选择平台适用的完整集合。安装依赖自动补齐；不应用配置、修改登录 shell、初始化持久镜像或启动 WSL。仅有 packages 阶段；--plan、--dry-run、--results、--resume 及 Windows 等价参数继续可用。
 
+## Zsh 与插件
+
+macOS 普通 profile 使用系统自带的 `/bin/zsh`，通过 Homebrew 准备 Antidote 和 fzf。安装后可用同平台快照恢复自己的 zsh 配置。第一次加载 Antidote 清单时需要网络，以便下载缺少的插件。Linux 和 WSL 的普通 profile 安装 zsh 和 fzf；需要 Antidote 时在对应环境执行一次：
+
+```sh
+git clone --depth=1 https://github.com/mattmc3/antidote.git "${ZDOTDIR:-$HOME}/.antidote"
+```
+
+在自己的 `.zshrc` 中加载 Antidote 并调用 `antidote load`，插件清单放在 `.zsh_plugins.txt`。先启动 `zsh -l` 验证键位和补全；若要设为账户默认值，选择 `/etc/shells` 中对应的 zsh 路径执行 `chsh -s`。[Antidote 安装说明](https://antidote.sh/install)
+
 ## 下载源与副作用
 
 默认使用声明的上游来源；--china-mirrors / -ChinaMirrors 显式切换安装下载源，--no-china-mirrors / -NoChinaMirrors 显式使用上游。持久镜像设置仅通过独立 apply/mirrors.sh 操作。

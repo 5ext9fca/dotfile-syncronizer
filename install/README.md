@@ -26,13 +26,21 @@
 
 ## Zsh 与插件
 
-macOS 普通 profile 使用系统自带的 `/bin/zsh`，通过 Homebrew 准备 Antidote 和 fzf。安装后可用同平台快照恢复自己的 zsh 配置。第一次加载 Antidote 清单时需要网络，以便下载缺少的插件。Linux 和 WSL 的普通 profile 安装 zsh 和 fzf；需要 Antidote 时在对应环境执行一次：
+Unix 普通 profile 选择 Zsh、fzf、Atuin、Starship 和 zoxide。macOS 使用系统 Zsh 和 Homebrew Antidote。Linux 和 WSL 的 APT 分支通过 Cargo 构建 Starship 与 Atuin，需预留编译时间。Linux 和 WSL 首次配置插件时执行：
 
 ```sh
-git clone --depth=1 https://github.com/mattmc3/antidote.git "${ZDOTDIR:-$HOME}/.antidote"
+git clone --depth=1 https://github.com/mattmc3/antidote.git "$HOME/.local/share/antidote"
 ```
 
-在自己的 `.zshrc` 中加载 Antidote 并调用 `antidote load`，插件清单放在 `.zsh_plugins.txt`。先启动 `zsh -l` 验证键位和补全；若要设为账户默认值，选择 `/etc/shells` 中对应的 zsh 路径执行 `chsh -s`。[Antidote 安装说明](https://antidote.sh/install)
+使用本次迁移布局时，恢复配置后运行以下命令生成本机静态插件脚本。日常启动只读取生成物。停用插件可编辑 `.zsh_plugins.txt` 后重新生成；保留标记补全初始化和工具加载位置的两行注释。独立工具的初始化位于 `.zshrc` 的 `_modern_zsh_tools` 函数。
+
+```sh
+zsh -f "${XDG_CONFIG_HOME:-$HOME/.config}/zsh/regenerate.zsh"
+```
+
+更新插件时在 Zsh 中手动 source 已安装的 `antidote.zsh`，运行 `antidote update` 后再次生成。macOS 可用 `brew upgrade atuin fzf starship zoxide antidote` 更新工具。用 `time zsh -i -c exit` 测量启动，用 `zsh -fic 'zmodload zsh/zprof; source ~/.zshrc; zprof'` 查看函数耗时。
+
+本次本机迁移的备份位于 `~/.local/state/zsh-migration/<时间戳>/`。回退时将该目录的三个隐藏文件按原名复制回 HOME，逐项核对 `created` 清单，对仍为此次版本的新增文件予以移出。保留数据库和后续个人编辑。若曾手动切换登录 shell，可用 `chsh -s` 加上原先在 `/etc/shells` 注册的路径恢复。
 
 ## 下载源与副作用
 

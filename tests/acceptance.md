@@ -76,3 +76,12 @@ macOS ARM64，Python 3.14.10、系统 zsh 5.9，使用更新后的 Viewer 0.2.0 
 最终完整 core 调用：28 个检查通过、2 个失败、24 个平台不适用跳过。两个失败项为旧会话提示断言和运行期间更新的备份路径断言；均已修正。`bash tests/execution-contract.sh` 重跑通过；最终 `.venv/bin/python -m unittest discover -s tests/core -v` 为 163 项、162 通过、1 项因缺少 PowerShell 跳过。其余适用检查包括安装、handlers、workflow、镜像、apply 事务、共享锁、真实进程竞争、终端输入/Ctrl-C、超时取消、依赖选择及报告均已有通过记录。没有宣称初次完整调用全绿。
 
 `git diff --check` 通过。文档已复核两项目 README、AGENTS 和相关组件说明，移除旧恢复入口提示及重复声明位置。Viewer wheel 独立加载 54 个默认软件声明，确认包资源无需 checkout。
+
+## Unix 默认交互工具与静态插件迁移（2026-11-27）
+
+macOS ARM64、Python 3.14.10，安装本地 Viewer 0.2.0 wheel；`pip check` 通过。Viewer 严格测试 25 项通过。macOS 普通和完整 profile 均通过不指定 catalog 的 dry-run。首次沙箱 dry-run 的默认输出目录不可写，使用主机权限重跑通过。
+
+- `./tests/check.sh --strict` 沙箱运行因终端受限失败两项；重叠的主机测试因部署锁冲突失败三项。独立临时目录重跑通过 30 项，失败 0 项，跳过 24 项。Linux、WSL、Windows 未运行原生安装。
+- 本机 Zsh 启动文件语法、非交互静默、工具 PATH、静态插件再生成、compaudit、禁网 PTY 启动及 prompt 渲染通过。Trace 确认补全后端执行一次。首次 PTY 在沙箱内因 Atuin 无法创建本地目录而失败，主机复验通过。中间配置出现函数清理命令拼写问题，修正后复验通过。
+- 五次 `zsh -i -c exit` 的中位数从 620 ms 降到最终的 340 ms（330–610 ms），空配置低于计时显示精度。zprof 显示 mise 钩子是主要耗时之一。PTY 确认 Atuin、fzf-tab、原生上下键与逐词移动绑定；外部终端实际按键和视觉效果留作人工确认。
+- 已复核根 README、安装指南、应用配置说明和 AGENTS.md；维护与恢复步骤在安装指南。
